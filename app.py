@@ -824,7 +824,7 @@ def save_images(image_keys, sec, siteCode):
 
     print("Files uploaded successfully to Firebase Storage")
     pre_save_url_to_firestore(excel_url, zip_url)
-
+...
 
 def pre_save_url_to_firestore(excel_url, zip_url):
     today_date = datetime.today().strftime('%d-%m-%Y')
@@ -1345,6 +1345,20 @@ def postsave_images(postimage_keys, postsec, siteCode):
 
     print("Data updated in Firestore successfully")
     wb = openpyxl.load_workbook(post_excel_file_path)
+    sheet_names = wb.sheetnames
+
+    # Check if the sheet for the sector already exists
+    if postsec in sheet_names:
+        # Get the existing sheet
+        ws = wb[postsec]
+
+        # Clear existing images in the sheet
+        for image in ws._images:
+            ws._images.remove(image)
+
+    else:
+        # Create a new worksheet in the Excel file
+        ws = wb.create_sheet(title=postsec, index=0)
 
     for postkey in postimage_keys:
         file = request.files.get(postkey)
@@ -1352,9 +1366,6 @@ def postsave_images(postimage_keys, postsec, siteCode):
             postimages[postkey] = file
         else:
             postimages[postkey] = None
-
-    # Create a new worksheet in the Excel file
-    ws = wb.create_sheet(title=postsec, index=0)
 
     for key, file in postimages.items():
         if file:
@@ -1376,6 +1387,7 @@ def postsave_images(postimage_keys, postsec, siteCode):
             ws.column_dimensions['B'].width = 50
             ws.column_dimensions['A'].width = 20
 
+            # Add the new image to the cell
             img = openpyxl.drawing.image.Image(post_file_path)
             img.width = 250
             img.height = 400
@@ -1400,6 +1412,8 @@ def postsave_images(postimage_keys, postsec, siteCode):
 
     print("Files uploaded successfully to Firebase Storage")
     post_save_url_to_firestore(excel_url, zip_url)
+
+
 
 # def postsave_images(postimage_keys, postsec, siteCode):
 #     postimages = {}
