@@ -714,71 +714,267 @@ def presector3():
     return render_template('presector3.html')
 
 
+# @app.route('/upload-images-1', methods=['POST'])
+# def upload_images_1():
+#     global site_code
+#     print(site_code)
+#     update_existing_sheet('sector1')
+#     return redirect(url_for("presector2"))
+#
+#
+# @app.route('/upload-images-2', methods=['POST'])
+# def upload_images_2():
+#     global site_code
+#     print(site_code)
+#     update_existing_sheet('sector2')
+#     return redirect(url_for("presector3"))
+#
+#
+# @app.route('/upload-images-3', methods=['POST'])
+# def upload_images_3():
+#     global site_code
+#     print(site_code)
+#     update_existing_sheet('sector3')
+#     return redirect(url_for("post_data"))
+#
+#
+# def update_existing_sheet(sec):
+#     global site_code
+#     print(site_code)
+#     image_keys = [
+#         'AzimuthCellSec1', 'MechanicalSec1', 'ElectricalSec1', 'AntennaHeightSec1',
+#         'AntBuildingSec1', 'BuildHeightSec1', 'PoleTiltSec1', 'MirrorCompassSec1', 'AntennaMarkingSec1'
+#     ] if sec == 'sector1' else [
+#         'AzimuthCellSec2', 'MechanicalSec2', 'ElectricalSec2', 'AntennaHeightSec2',
+#         'AntBuildingSec2', 'BuildHeightSec2', 'PoleTiltSec2', 'MirrorCompassSec2', 'AntennaMarkingSec2'
+#     ] if sec == 'sector2' else [
+#         'AzimuthCellSec3', 'MechanicalSec3', 'ElectricalSec3', 'AntennaHeightSec3',
+#         'AntBuildingSec3', 'BuildHeightSec3', 'PoleTiltSec3', 'MirrorCompassSec3', 'AntennaMarkingSec3'
+#     ]
+#
+#     save_images(image_keys, sec, site_code)
+#
+#
+# def save_images(image_keys, sec, siteCode):
+#     images = {}
+#     counter = 1
+#     cellCount = 1
+#     uploaded_images = {}
+#
+#     for key in image_keys:
+#         print(key)
+#         print(sec)
+#         file = request.files.get(key)
+#         if file is not None:  # Check if an image is uploaded
+#             print("If started")
+#             images[key] = file
+#             uploaded_images[key] = True  # Mark the key as True if image is uploaded
+#         else:
+#             print("Else started")
+#             images[key] = None
+#             uploaded_images[key] = False
+#
+#     # Your existing code for Excel manipulation...
+#
+#     wb = openpyxl.load_workbook(excel_file_path)
+#
+#     ws = wb[sec] if sec in wb.sheetnames else wb.create_sheet(title=sec)
+#
+#     for key, file in images.items():
+#         if file:
+#             # Save the file in the uploads directory
+#             file_path = os.path.join(UPLOADS_DIR, f"{sec}_{counter}.jpg")
+#             file.save(file_path)
+#
+#             # Add image metadata to the Excel sheet
+#             cell = ws[f'A{cellCount}']
+#             cell.value = str(image_keys[counter - 1])
+#             cell.font = Font(size='16', bold=True)
+#             cell.alignment = Alignment(horizontal='center', vertical='center')
+#             ws.row_dimensions[cellCount].height = 300
+#             ws.column_dimensions['B'].width = 50
+#             ws.column_dimensions['A'].width = 20
+#
+#             # Add image to the Excel sheet
+#             img = openpyxl.drawing.image.Image(file_path)
+#             img.width = 250
+#             img.height = 400
+#             img.anchor = f'B{cellCount}'
+#             ws.add_image(img)
+#
+#         cellCount += 2
+#         counter += 1
+#
+#     # Save the modified Excel file
+#     wb.save(excel_file_path)
+#
+#     # Upload Excel file to Firebase Storage
+#     bucket = storage.bucket()
+#     excel_blob = bucket.blob('pre_data/images.xlsx')
+#     excel_blob.upload_from_filename(excel_file_path)
+#     excel_url = excel_blob.public_url
+#
+#     # Create a zip file of the images directory
+#     shutil.make_archive(UPLOADS_DIR, 'zip', UPLOADS_DIR)
+#
+#     # Upload the zip file to Firebase Storage
+#     zip_blob = bucket.blob('zipF/Predata_RAR.zip')
+#     zip_blob.upload_from_filename('uploads/Predata_RAR.zip')
+#     zip_url = zip_blob.public_url
+#
+#     print("Files uploaded successfully to Firebase Storage")
+#     pre_save_url_to_firestore(excel_url, zip_url)
+#
+#
+# def pre_save_url_to_firestore(excel_url, zip_url):
+#     today_date = datetime.today().strftime('%d-%m-%Y')
+#
+#     # Create a dictionary with document data
+#     document_data = {
+#         "date": today_date,
+#         "Pre_Excel_File_URL": excel_url,
+#         "Pre_Zip_File_URL": zip_url,
+#     }
+#
+#     db = firestore.client()
+#     db.collection("Projects").document(site_code).collection("ParameterData").document("PreData").set(document_data)
+#
+#     print("File URLs and date saved to Firestore.")
+#
+# def pre_save_url_to_firestore(excel_url, zip_url):
+#     today_date = datetime.today().strftime('%d-%m-%Y')
+#
+#     # Create a dictionary with document data
+#     document_data = {
+#         "date": today_date,
+#         "Pre_Excel_File_URL": excel_url,
+#         "Pre_Zip_File_URL": zip_url,
+#     }
+#
+#     db.collection("Projects").document(site_code).collection("ParameterData").document("PreData").set(document_data)
+#
+#     print("File URLs and date saved to Firestore.")
+#
+#
+# def upload_to_storage():
+#     bucket = storage.bucket()
+#
+#     # Upload Excel file
+#     excel_blob = bucket.blob('Audit_Data/')
+#     excel_blob.upload_from_filename(excel_file_path)
+#
+#     # Upload zipped folder
+#     zip_blob = bucket.blob('Audit_Data/')
+#     zip_blob.upload_from_filename('uploads/Predata_RAR.zip')
+#
+#     print("Files uploaded successfully to Firebase Storage")
+#
+#     # Generate the document name
+#
+#     def save_urls_to_firestore(excel_url, zip_url):
+#         today_date = datetime.today().strftime('%d-%m-%Y')
+#
+#         # Create a dictionary with document data
+#         document_data = {
+#             "date": today_date,
+#             "Download_Excel_Data": excel_url,
+#             "Download_Zip_Data": zip_url,
+#         }
+#
+#         # Set the document in Firestore with the provided name
+#         db.collection("files").document(today_date).set(document_data)
+#
+#         print("File URLs and document name saved to Firestore.")
+#
+#     def main():
+#         excel_file_path = 'path/to/excel_file.xlsx'
+#         document_name = input("Enter the site_id to store the file in: ")
+#
+#         # Upload files to Firebase Storage
+#         excel_url, zip_url = upload_to_storage(excel_file_path)
+#
+#         # Save URLs to Firestore
+#         save_urls_to_firestore(excel_url, zip_url)
+#
+#     def upload_to_storage(excel_file_path):
+#         bucket = storage.bucket()
+#
+#     # Upload Excel file
+#     excel_blob_name = 'pre_data/images.xlsx'
+#     excel_blob = bucket.blob(excel_blob_name)
+#     excel_blob.upload_from_filename(excel_file_path)
+#
+#     # Create a zip file of the images directory
+#     uploads_dir = 'path/to/uploads/directory'  # Modify as needed
+#     shutil.make_archive(uploads_dir, 'zip', uploads_dir)
+#
+#     # Upload zipped folder
+#     zip_blob_name = 'zipF/Predata_RAR.zip'
+#     zip_blob = bucket.blob(zip_blob_name)
+#     zip_blob.upload_from_filename(f'{uploads_dir}.zip')
+#
+#     # Get the URLs of the uploaded files
+#     excel_url = excel_blob.public_url
+#     zip_url = zip_blob.public_url
+#
+#     print("Files uploaded successfully to Firestore")
+#     return excel_url,zip_url
+
+
 @app.route('/upload-images-1', methods=['POST'])
 def upload_images_1():
-    global site_code
-    print(site_code)
-    update_existing_sheet('sector1')
+    image_keys = ['AzimuthCell', 'Mechanical', 'Electrical', 'AntennaHeight',
+                  'AntBuilding', 'BuildHeight', 'PoleTilt', 'MirrorCompass', 'AntennaMarking']
+    save_images(image_keys, 'Sec1')
     return redirect(url_for("presector2"))
 
 
 @app.route('/upload-images-2', methods=['POST'])
 def upload_images_2():
-    global site_code
-    print(site_code)
-    update_existing_sheet('sector2')
+    image_keys = ['AzimuthCell', 'Mechanical', 'Electrical', 'AntennaHeight',
+                  'PoleTilt', 'MirrorCompass', 'AntennaMarking']
+    save_images(image_keys, 'Sec2')
     return redirect(url_for("presector3"))
 
 
 @app.route('/upload-images-3', methods=['POST'])
 def upload_images_3():
-    global site_code
-    print(site_code)
-    update_existing_sheet('sector3')
+    image_keys = ['AzimuthCell', 'Mechanical', 'Electrical', 'AntennaHeight',
+                  'PoleTilt', 'MirrorCompass', 'AntennaMarking']
+    save_images(image_keys, 'Sec3')
+
+    # Zip the Predata_RAR folder
+    shutil.make_archive(UPLOADS_DIR, 'zip', UPLOADS_DIR)
     return redirect(url_for("post_data"))
 
 
-def update_existing_sheet(sec):
-    global site_code
-    print(site_code)
-    image_keys = [
-        'AzimuthCellSec1', 'MechanicalSec1', 'ElectricalSec1', 'AntennaHeightSec1',
-        'AntBuildingSec1', 'BuildHeightSec1', 'PoleTiltSec1', 'MirrorCompassSec1', 'AntennaMarkingSec1'
-    ] if sec == 'sector1' else [
-        'AzimuthCellSec2', 'MechanicalSec2', 'ElectricalSec2', 'AntennaHeightSec2',
-        'AntBuildingSec2', 'BuildHeightSec2', 'PoleTiltSec2', 'MirrorCompassSec2', 'AntennaMarkingSec2'
-    ] if sec == 'sector2' else [
-        'AzimuthCellSec3', 'MechanicalSec3', 'ElectricalSec3', 'AntennaHeightSec3',
-        'AntBuildingSec3', 'BuildHeightSec3', 'PoleTiltSec3', 'MirrorCompassSec3', 'AntennaMarkingSec3'
-    ]
-
-    save_images(image_keys, sec, site_code)
-
-
-def save_images(image_keys, sec, siteCode):
+def save_images(image_keys, sec):
     images = {}
     counter = 1
     cellCount = 1
-    uploaded_images = {}
+
+    # Load the existing workbook if it exists
+    try:
+        wb = openpyxl.load_workbook(excel_file_path)
+    except FileNotFoundError:
+        # If the workbook doesn't exist, create a new one
+        wb = openpyxl.Workbook()
+
+    # Check if the sheet for the sector already exists
+    if sec in wb.sheetnames:
+        # Get the existing sheet
+        ws = wb[sec]
+
+        # Clear existing images in the sheet
+        for image in ws._images:
+            ws._images.remove(image)
+    else:
+        # Create a new worksheet in the Excel file
+        ws = wb.create_sheet(title=sec, index=0)
 
     for key in image_keys:
-        print(key)
-        print(sec)
-        file = request.files.get(key)
-        if file is not None:  # Check if an image is uploaded
-            print("If started")
-            images[key] = file
-            uploaded_images[key] = True  # Mark the key as True if image is uploaded
-        else:
-            print("Else started")
-            images[key] = None
-            uploaded_images[key] = False
-
-    # Your existing code for Excel manipulation...
-
-    wb = openpyxl.load_workbook(excel_file_path)
-
-    ws = wb[sec] if sec in wb.sheetnames else wb.create_sheet(title=sec)
+        file = request.files.get(key + sec)
+        images[key] = file if file else None
 
     for key, file in images.items():
         if file:
@@ -786,23 +982,22 @@ def save_images(image_keys, sec, siteCode):
             file_path = os.path.join(UPLOADS_DIR, f"{sec}_{counter}.jpg")
             file.save(file_path)
 
-            # Add image metadata to the Excel sheet
-            cell = ws[f'A{cellCount}']
-            cell.value = str(image_keys[counter - 1])
-            cell.font = Font(size='16', bold=True)
-            cell.alignment = Alignment(horizontal='center', vertical='center')
-            ws.row_dimensions[cellCount].height = 300
-            ws.column_dimensions['B'].width = 50
-            ws.column_dimensions['A'].width = 20
+            # Store the image key name in the first column
+            key_cell = ws.cell(row=cellCount, column=1)
+            key_cell.value = key
+            key_cell.font = Font(size='16', bold=True)
+            key_cell.alignment = Alignment(horizontal='center', vertical='center')
 
-            # Add image to the Excel sheet
+            # Add the new image to the cell in the second column
+            img_cell = ws.cell(row=cellCount, column=2)
+            # img_cell.value = f"{sec}_{counter}.jpg"
             img = openpyxl.drawing.image.Image(file_path)
             img.width = 250
             img.height = 400
             img.anchor = f'B{cellCount}'
             ws.add_image(img)
 
-        cellCount += 2
+        cellCount += 1
         counter += 1
 
     # Save the modified Excel file
@@ -824,7 +1019,7 @@ def save_images(image_keys, sec, siteCode):
 
     print("Files uploaded successfully to Firebase Storage")
     pre_save_url_to_firestore(excel_url, zip_url)
-...
+
 
 def pre_save_url_to_firestore(excel_url, zip_url):
     today_date = datetime.today().strftime('%d-%m-%Y')
@@ -836,22 +1031,7 @@ def pre_save_url_to_firestore(excel_url, zip_url):
         "Pre_Zip_File_URL": zip_url,
     }
 
-    db = firestore.client()
-    db.collection("Projects").document(site_code).collection("ParameterData").document("PreData").set(document_data)
-
-    print("File URLs and date saved to Firestore.")
-
-def pre_save_url_to_firestore(excel_url, zip_url):
-    today_date = datetime.today().strftime('%d-%m-%Y')
-
-    # Create a dictionary with document data
-    document_data = {
-        "date": today_date,
-        "Pre_Excel_File_URL": excel_url,
-        "Pre_Zip_File_URL": zip_url,
-    }
-
-    db.collection("Projects").document(site_code).collection("ParameterData").document("PreData").set(document_data)
+    db.collection("files").document(today_date).set(document_data)
 
     print("File URLs and date saved to Firestore.")
 
@@ -919,6 +1099,8 @@ def upload_to_storage():
 
     print("Files uploaded successfully to Firestore")
     return excel_url,zip_url
+
+
 @app.route('/postdata.html', methods=['GET', 'POST'])
 def post_data():
     if 'uid' in session:
