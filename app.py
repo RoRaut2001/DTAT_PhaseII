@@ -589,17 +589,19 @@ def submit_form():
         mechanical_cell = request.form.get('mechanicalCell')
         electrical_cell = request.form.get('electricalCell')
         pole_tilt = request.form.get('poleTilt')
+        antenna_height = request.form.get('antennaheight')
 
         doc_ref = db.collection('Projects').document(site_id).collection("ParameterData").document(
             "PostData").collection(sector).document("Requirement")
         if not doc_ref.get().exists:
             doc_ref.set({})
         doc_ref.set({
-            'azimuth': azimuth,
-            'tower_height': tower_height,
-            'mechanical_cell': mechanical_cell,
-            'electrical_cell': electrical_cell,
-            'pole_tilt': pole_tilt
+            'AzimuthCell': azimuth,
+            'TowerHeight': tower_height,
+            'Mechanical': mechanical_cell,
+            'Electrical': electrical_cell,
+            'PoleTilt': pole_tilt,
+            'AntennaHeight': antenna_height
         })
 
         return redirect(url_for('fillpostdata'))
@@ -712,214 +714,6 @@ def presector2():
 @app.route('/presector3.html')
 def presector3():
     return render_template('presector3.html')
-
-
-# @app.route('/upload-images-1', methods=['POST'])
-# def upload_images_1():
-#     global site_code
-#     print(site_code)
-#     update_existing_sheet('sector1')
-#     return redirect(url_for("presector2"))
-#
-#
-# @app.route('/upload-images-2', methods=['POST'])
-# def upload_images_2():
-#     global site_code
-#     print(site_code)
-#     update_existing_sheet('sector2')
-#     return redirect(url_for("presector3"))
-#
-#
-# @app.route('/upload-images-3', methods=['POST'])
-# def upload_images_3():
-#     global site_code
-#     print(site_code)
-#     update_existing_sheet('sector3')
-#     return redirect(url_for("post_data"))
-#
-#
-# def update_existing_sheet(sec):
-#     global site_code
-#     print(site_code)
-#     image_keys = [
-#         'AzimuthCellSec1', 'MechanicalSec1', 'ElectricalSec1', 'AntennaHeightSec1',
-#         'AntBuildingSec1', 'BuildHeightSec1', 'PoleTiltSec1', 'MirrorCompassSec1', 'AntennaMarkingSec1'
-#     ] if sec == 'sector1' else [
-#         'AzimuthCellSec2', 'MechanicalSec2', 'ElectricalSec2', 'AntennaHeightSec2',
-#         'AntBuildingSec2', 'BuildHeightSec2', 'PoleTiltSec2', 'MirrorCompassSec2', 'AntennaMarkingSec2'
-#     ] if sec == 'sector2' else [
-#         'AzimuthCellSec3', 'MechanicalSec3', 'ElectricalSec3', 'AntennaHeightSec3',
-#         'AntBuildingSec3', 'BuildHeightSec3', 'PoleTiltSec3', 'MirrorCompassSec3', 'AntennaMarkingSec3'
-#     ]
-#
-#     save_images(image_keys, sec, site_code)
-#
-#
-# def save_images(image_keys, sec, siteCode):
-#     images = {}
-#     counter = 1
-#     cellCount = 1
-#     uploaded_images = {}
-#
-#     for key in image_keys:
-#         print(key)
-#         print(sec)
-#         file = request.files.get(key)
-#         if file is not None:  # Check if an image is uploaded
-#             print("If started")
-#             images[key] = file
-#             uploaded_images[key] = True  # Mark the key as True if image is uploaded
-#         else:
-#             print("Else started")
-#             images[key] = None
-#             uploaded_images[key] = False
-#
-#     # Your existing code for Excel manipulation...
-#
-#     wb = openpyxl.load_workbook(excel_file_path)
-#
-#     ws = wb[sec] if sec in wb.sheetnames else wb.create_sheet(title=sec)
-#
-#     for key, file in images.items():
-#         if file:
-#             # Save the file in the uploads directory
-#             file_path = os.path.join(UPLOADS_DIR, f"{sec}_{counter}.jpg")
-#             file.save(file_path)
-#
-#             # Add image metadata to the Excel sheet
-#             cell = ws[f'A{cellCount}']
-#             cell.value = str(image_keys[counter - 1])
-#             cell.font = Font(size='16', bold=True)
-#             cell.alignment = Alignment(horizontal='center', vertical='center')
-#             ws.row_dimensions[cellCount].height = 300
-#             ws.column_dimensions['B'].width = 50
-#             ws.column_dimensions['A'].width = 20
-#
-#             # Add image to the Excel sheet
-#             img = openpyxl.drawing.image.Image(file_path)
-#             img.width = 250
-#             img.height = 400
-#             img.anchor = f'B{cellCount}'
-#             ws.add_image(img)
-#
-#         cellCount += 2
-#         counter += 1
-#
-#     # Save the modified Excel file
-#     wb.save(excel_file_path)
-#
-#     # Upload Excel file to Firebase Storage
-#     bucket = storage.bucket()
-#     excel_blob = bucket.blob('pre_data/images.xlsx')
-#     excel_blob.upload_from_filename(excel_file_path)
-#     excel_url = excel_blob.public_url
-#
-#     # Create a zip file of the images directory
-#     shutil.make_archive(UPLOADS_DIR, 'zip', UPLOADS_DIR)
-#
-#     # Upload the zip file to Firebase Storage
-#     zip_blob = bucket.blob('zipF/Predata_RAR.zip')
-#     zip_blob.upload_from_filename('uploads/Predata_RAR.zip')
-#     zip_url = zip_blob.public_url
-#
-#     print("Files uploaded successfully to Firebase Storage")
-#     pre_save_url_to_firestore(excel_url, zip_url)
-#
-#
-# def pre_save_url_to_firestore(excel_url, zip_url):
-#     today_date = datetime.today().strftime('%d-%m-%Y')
-#
-#     # Create a dictionary with document data
-#     document_data = {
-#         "date": today_date,
-#         "Pre_Excel_File_URL": excel_url,
-#         "Pre_Zip_File_URL": zip_url,
-#     }
-#
-#     db = firestore.client()
-#     db.collection("Projects").document(site_code).collection("ParameterData").document("PreData").set(document_data)
-#
-#     print("File URLs and date saved to Firestore.")
-#
-# def pre_save_url_to_firestore(excel_url, zip_url):
-#     today_date = datetime.today().strftime('%d-%m-%Y')
-#
-#     # Create a dictionary with document data
-#     document_data = {
-#         "date": today_date,
-#         "Pre_Excel_File_URL": excel_url,
-#         "Pre_Zip_File_URL": zip_url,
-#     }
-#
-#     db.collection("Projects").document(site_code).collection("ParameterData").document("PreData").set(document_data)
-#
-#     print("File URLs and date saved to Firestore.")
-#
-#
-# def upload_to_storage():
-#     bucket = storage.bucket()
-#
-#     # Upload Excel file
-#     excel_blob = bucket.blob('Audit_Data/')
-#     excel_blob.upload_from_filename(excel_file_path)
-#
-#     # Upload zipped folder
-#     zip_blob = bucket.blob('Audit_Data/')
-#     zip_blob.upload_from_filename('uploads/Predata_RAR.zip')
-#
-#     print("Files uploaded successfully to Firebase Storage")
-#
-#     # Generate the document name
-#
-#     def save_urls_to_firestore(excel_url, zip_url):
-#         today_date = datetime.today().strftime('%d-%m-%Y')
-#
-#         # Create a dictionary with document data
-#         document_data = {
-#             "date": today_date,
-#             "Download_Excel_Data": excel_url,
-#             "Download_Zip_Data": zip_url,
-#         }
-#
-#         # Set the document in Firestore with the provided name
-#         db.collection("files").document(today_date).set(document_data)
-#
-#         print("File URLs and document name saved to Firestore.")
-#
-#     def main():
-#         excel_file_path = 'path/to/excel_file.xlsx'
-#         document_name = input("Enter the site_id to store the file in: ")
-#
-#         # Upload files to Firebase Storage
-#         excel_url, zip_url = upload_to_storage(excel_file_path)
-#
-#         # Save URLs to Firestore
-#         save_urls_to_firestore(excel_url, zip_url)
-#
-#     def upload_to_storage(excel_file_path):
-#         bucket = storage.bucket()
-#
-#     # Upload Excel file
-#     excel_blob_name = 'pre_data/images.xlsx'
-#     excel_blob = bucket.blob(excel_blob_name)
-#     excel_blob.upload_from_filename(excel_file_path)
-#
-#     # Create a zip file of the images directory
-#     uploads_dir = 'path/to/uploads/directory'  # Modify as needed
-#     shutil.make_archive(uploads_dir, 'zip', uploads_dir)
-#
-#     # Upload zipped folder
-#     zip_blob_name = 'zipF/Predata_RAR.zip'
-#     zip_blob = bucket.blob(zip_blob_name)
-#     zip_blob.upload_from_filename(f'{uploads_dir}.zip')
-#
-#     # Get the URLs of the uploaded files
-#     excel_url = excel_blob.public_url
-#     zip_url = zip_blob.public_url
-#
-#     print("Files uploaded successfully to Firestore")
-#     return excel_url,zip_url
-
 
 @app.route('/upload-images-1', methods=['POST'])
 def upload_images_1():
@@ -1130,6 +924,17 @@ def post_data():
             return render_template('postdata.html', site_codes=site_codes_list)
     return "Unauthorized", 401  # If user is not logged in or not authorized
 
+def fetch_requirements(site_code, sector):
+    # Fetch requirements from Firestore
+    requirements_ref = db.collection('Projects').document(site_code) \
+                            .collection('ParameterData').document('PostData') \
+                            .collection(sector).document('Requirement')
+    requirements = requirements_ref.get().to_dict()
+    print(requirements)
+
+    return requirements
+
+
 @app.route('/postsectorselection.html')
 def post_sector_selection():
     site_code = request.args.get('SiteID')
@@ -1140,17 +945,37 @@ def post_sector_selection():
 
 @app.route('/postsector1.html')
 def postsector1():
-    return render_template("postsector1.html")
+    site_code = request.args.get('SiteID')
+    sector = 'sector1'  # or dynamically determine sector based on the URL
 
+    # Fetch requirements data
+    requirements = fetch_requirements(site_code, sector)
+
+    # Render the HTML template with the fetched data
+    return render_template("postsector1.html", requirements=requirements)
 
 @app.route('/postsector2.html')
 def postsector2():
-    return render_template("postsector2.html")
+    site_code = request.args.get('SiteID')
+    sector = 'sector2'  # or dynamically determine sector based on the URL
+
+    # Fetch requirements data
+    requirements = fetch_requirements(site_code, sector)
+
+    # Render the HTML template with the fetched data
+    return render_template("postsector2.html", requirements=requirements)
 
 
 @app.route('/postsector3.html')
 def postsector3():
-    return render_template("postsector3.html")
+    site_code = request.args.get('SiteID')
+    sector = 'sector3'  # or dynamically determine sector based on the URL
+
+    # Fetch requirements data
+    requirements = fetch_requirements(site_code, sector)
+
+    # Render the HTML template with the fetched data
+    return render_template("postsector3.html", requirements=requirements)
 
 
 @app.route('/extract_text', methods=['POST'])
@@ -1244,7 +1069,7 @@ def postupload_images_1():
 
         if texts:
             extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirements')
+            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirement')
             doc = doc_ref.get()
             if doc.exists:
                 data = doc.to_dict()
@@ -1265,7 +1090,7 @@ def postupload_images_1():
 
         if texts:
             extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirements')
+            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirement')
             doc = doc_ref.get()
             if doc.exists:
                 data = doc.to_dict()
@@ -1330,7 +1155,7 @@ def postupload_images_2():
         if texts:
             print("Enters in text")
             extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirements')
+            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirement')
             doc = doc_ref.get()
             if doc.exists:
                 print("enter in docs")
@@ -1351,7 +1176,7 @@ def postupload_images_2():
 
         if texts:
             extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirements')
+            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirement')
             doc = doc_ref.get()
             if doc.exists:
                 data = doc.to_dict()
@@ -1372,7 +1197,7 @@ def postupload_images_2():
 
         if texts:
             extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirements')
+            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirement')
             doc = doc_ref.get()
             if doc.exists:
                 data = doc.to_dict()
@@ -1438,7 +1263,7 @@ def postupload_images_3():
         if texts:
             print("Enters in text")
             extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirements')
+            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirement')
             doc = doc_ref.get()
             if doc.exists:
                 print("enter in docs")
@@ -1459,7 +1284,7 @@ def postupload_images_3():
 
         if texts:
             extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirements')
+            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirement')
             doc = doc_ref.get()
             if doc.exists:
                 data = doc.to_dict()
@@ -1480,7 +1305,7 @@ def postupload_images_3():
 
         if texts:
             extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirements')
+            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirement')
             doc = doc_ref.get()
             if doc.exists:
                 data = doc.to_dict()
@@ -1594,108 +1419,6 @@ def postsave_images(postimage_keys, postsec, siteCode):
 
     print("Files uploaded successfully to Firebase Storage")
     post_save_url_to_firestore(excel_url, zip_url)
-
-
-
-# def postsave_images(postimage_keys, postsec, siteCode):
-#     postimages = {}
-#     site_code = session.get('site_code')  # Retrieve SiteID from session
-#     print("SiteID:", site_code)  # Print SiteID to console
-#     if not site_code:
-#         return jsonify({'error': 'SiteID not found in session'}), 400
-#
-#     # Update Firestore with upload status
-#     db = firestore.client()
-#     project_ref = db.collection('Projects').document(siteCode)
-#     parameter_data_ref = project_ref.collection('ParameterData')
-#     post_data_ref = parameter_data_ref.document('PostData')
-#     sec_collection_ref = post_data_ref.collection(postsec)
-#     status_doc_ref = sec_collection_ref.document('Status')
-#     status_doc_ref.set(postimages)
-#
-#     print("Data updated in Firestore successfully")
-#
-#     # Check if the workbook exists, if not, create a new one
-#     if not os.path.exists(post_excel_file_path):
-#         wb = openpyxl.Workbook()
-#     else:
-#         wb = openpyxl.load_workbook(post_excel_file_path)
-#
-#     # Check if sheet for the sector exists, if not, create a new sheet
-#     if postsec not in wb.sheetnames:
-#         ws = wb.create_sheet(title=postsec, index=0)
-#     else:
-#         ws = wb[postsec]
-#
-#     for postkey in postimage_keys:
-#         file = request.files.get(postkey)
-#         if file:
-#             postimages[postkey] = file
-#             post_file_path = os.path.join(POSTUPLOADS_DIR, f"{postsec}_{postkey}.jpg")
-#
-#             try:
-#                 img = PILImage.open(file)
-#             except PILImage.UnidentifiedImageError:
-#                 print(f"Unsupported image format for {postkey}: {file.filename}")
-#                 continue
-#
-#             img.save(post_file_path)
-#
-#             # Find existing image if exists and update it
-#             key_found = False
-#             for r in range(1, ws.max_row + 1):
-#                 for c in range(1, ws.max_column + 1):
-#                     cell = ws.cell(row=r, column=c)
-#                     if isinstance(cell.value, str) and cell.value == str(postkey):
-#                         key_found = True
-#                         # Delete existing image
-#                         for img_obj in ws._images:
-#                             if img_obj.anchor == cell.coordinate:
-#                                 ws._images.remove(img_obj)
-#                                 break
-#                         # Add new image
-#                         img = openpyxl.drawing.image.Image(post_file_path)
-#                         img.width = 250
-#                         img.height = 400
-#                         img.anchor = cell.coordinate
-#                         ws.add_image(img)
-#                         break
-#
-#             # If key not found, create a new entry
-#             if not key_found:
-#                 postcellCount = ws.max_row + 1
-#                 cell = ws.cell(row=postcellCount, column=1)
-#                 cell.value = str(postkey)
-#                 cell.font = Font(size='16', bold=True)
-#                 cell.alignment = Alignment(horizontal='center', vertical='center')
-#                 ws.row_dimensions[postcellCount].height = 300
-#                 ws.column_dimensions['B'].width = 50
-#                 ws.column_dimensions['A'].width = 20
-#
-#                 img = openpyxl.drawing.image.Image(post_file_path)
-#                 img.width = 250
-#                 img.height = 400
-#                 img.anchor = cell.coordinate
-#                 ws.add_image(img)
-#
-#     wb.save(post_excel_file_path)
-#
-#     bucket = storage.bucket()
-#     excel_blob = bucket.blob('post_data/postimages.xlsx')
-#     excel_blob.upload_from_filename(post_excel_file_path)
-#     excel_url = excel_blob.public_url
-#
-#     shutil.make_archive(POSTUPLOADS_DIR, 'zip', POSTUPLOADS_DIR)
-#
-#     zip_blob = bucket.blob('zipF/Postdata_RAR.zip')
-#     zip_blob.upload_from_filename('postuploads/Postdata_RAR.zip')
-#     zip_url = zip_blob.public_url
-#
-#     print("Files uploaded successfully to Firebase Storage")
-#     post_save_url_to_firestore(excel_url, zip_url)
-#
-#
-
 
 def post_save_url_to_firestore(excel_url, zip_url):
     site_code = session.get('site_code')  # Retrieve SiteID from session
