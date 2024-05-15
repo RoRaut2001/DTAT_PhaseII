@@ -336,6 +336,7 @@
       </tbody>
     </table>
     <button id="submitButton" onclick="submitForm1()">Submit</button>
+    <span>{{site_code}}</span>
 
 
      <p id="mobileSuccessMessage" style="color: #333333; margin-top: 70px; margin-left: 25%; display: none">
@@ -371,6 +372,11 @@
         const file = input.files[0];
         formData.append(input.name, file);
       });
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const site_code = urlParams.get('site_code');
+      console.log(site_code);
+      formData.append('Site_code', site_code);
 
       fetch("/upload-images-1", {
         method: "POST",

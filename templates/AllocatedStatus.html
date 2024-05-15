@@ -232,19 +232,6 @@ margin-top: 5%;
   table {
     margin: 0 auto; /* Center the table horizontally */
   }
-<!--  .status-button,-->
-<!--  .status-button1 {-->
-<!--    display: inline-block; /* Display buttons inline */-->
-<!--    width: 25%; /* Adjust button width */-->
-<!--    padding: 10px;-->
-<!--    background-color: #1976d2;-->
-<!--    color: #fff;-->
-<!--    border: none;-->
-<!--    cursor: pointer;-->
-<!--    margin-left:20%;-->
-<!--    border-radius: 25px;-->
-<!--    margin-top: 5%;-->
-<!--  }-->
 
   button {
     padding: 10px 20px;
@@ -328,11 +315,7 @@ margin-top: 5%;
   <div class="all">
         <div class="nav-links">
             <div class="dropdown" onclick="toggleActivityDropdown()">
-<!--                <a href="#" class="dropbtn">Activity</a>-->
-                <!-- Adding sub-options under "Activity" -->
                 <div class="dropdown-content" id="activityDropdownContent">
-<!--                    <a href="/AllocatedStatus.html">Task Allocation</a>-->
-<!--                    <a href="/usertaskStatus">Task Status</a>-->
                 </div>
             </div>
             <div class="dropdown" onclick="toggleProfileDropdown()">
@@ -372,13 +355,11 @@ margin-top: 5%;
         </tr>
       </thead>
       <tbody id="tableBody">
-        <!-- Data will be added dynamically here -->
       </tbody>
     </table>
   </div>
   <button id="acceptButton" class="status-button" style="display: none;" onclick="acceptAction()">Accept</button>
 
-  <!-- Cancel button -->
   <button id="cancelButton" class="status-button1" style="display: none;" onclick="cancelAction()">Cancel</button>
 
   <script>
@@ -389,16 +370,15 @@ margin-top: 5%;
           var siteId = document.getElementById("siteId").value;
 
         if (siteId === "Select Circle") {
-                // Display error message
                 document.getElementById("errorMessage").style.display = "block";
-                // Prevent form submission
+
                 event.preventDefault();
             } else {
-                // Hide error message if site ID is selected
                 document.getElementById("errorMessage").style.display = "none";
-                // Allow form submission
-                // Optionally, you can remove this line to allow default form submission behavior
-                // event.preventDefault();
+                 // Store the selected site code
+                    selectedSiteCode = siteId;
+
+
             }
 
           if (siteId !== "Select Circle") {
@@ -436,12 +416,20 @@ margin-top: 5%;
             })
             .catch(error => console.error('Error fetching data:', error));
           } else {
-        <!--    alert("Please select a Site ID.");-->
           }
         }
 
     function acceptAction() {
-      window.location.href = "presectorselectionpage.html";
+    if (selectedSiteCode !== "") {
+        // Construct URL with selected site code
+        var url = "presectorselectionpage.html?site_code=" + encodeURIComponent(selectedSiteCode);
+        // Redirect to the next page
+        window.location.href = url;
+    } else {
+        // Handle case where no site code is selected
+        alert("Please select a site code first.");
+    }
+
     }
 
     function cancelAction() {

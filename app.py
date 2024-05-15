@@ -16,6 +16,7 @@ from google.cloud import vision_v1
 from openpyxl.styles import Font, Alignment
 import requests
 from requests.exceptions import ConnectionError
+from werkzeug.utils import secure_filename
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -227,7 +228,6 @@ def allocated_status():
 
         if user.exists:
             employee_name = user.get("employee_Name")
-            print(employee_name)
             doc_snap = db.collection('Projects').where("AssignedEmployee", "==", employee_name).stream()
             print(doc_snap)
 
@@ -694,104 +694,133 @@ def fetch_status(site_code):
     except Exception as e:
         print("Error fetching status:", e)
         return "Pending"
+
+
+########### Predata excel sheet generation with respective siteID ########################################
 @app.route('/presectorselectionpage.html')
 def presectorselectionpage():
-    global site_code
-    print(site_code)
+    site_code = request.args.get('site_code')  # Retrieve site_code from query parameters
+    print(site_code)  # Print site_code to the console
     return render_template('presectorselectionpage.html')
 
 
 @app.route('/presector1.html')
 def presector1():
-    return render_template('presector1.html')
+    site_code = request.args.get('site_code')
+    print("presector1 sitecode", site_code)
+    session['site_code'] = site_code  # Store the site_code in the session
+    return render_template('presector1.html', site_code=site_code)
 
 
 @app.route('/presector2.html')
 def presector2():
-    return render_template('presector2.html')
+    site_code = request.args.get('site_code')
+    print("presector2 sitecode", site_code)
+    session['site_code'] = site_code  # Store the site_code in the session
+    return render_template('presector2.html', site_code=site_code)
 
 
 @app.route('/presector3.html')
 def presector3():
-    return render_template('presector3.html')
+    site_code = request.args.get('site_code')
+    print("presector3 sitecode", site_code)
+    session['site_code'] = site_code  # Store the site_code in the session
+    return render_template('presector3.html', site_code=site_code)
+
 
 @app.route('/upload-images-1', methods=['POST'])
 def upload_images_1():
     image_keys = ['AzimuthCell', 'Mechanical', 'Electrical', 'AntennaHeight',
                   'AntBuilding', 'BuildHeight', 'PoleTilt', 'MirrorCompass', 'AntennaMarking']
-    save_images(image_keys, 'Sec1')
-    return redirect(url_for("presector2"))
+    site_code = session.get('site_code')  # Retrieve the site_code from the session
+    print("uploadimage sitecode",site_code)
+    save_images(image_keys, 'Sec1', site_code)
+    return redirect(url_for("presector2", site_code=site_code))
 
 
 @app.route('/upload-images-2', methods=['POST'])
 def upload_images_2():
+    site_code = request.args.get('site_code')  # Retrieve site_code from query parameters
     image_keys = ['AzimuthCell', 'Mechanical', 'Electrical', 'AntennaHeight',
                   'PoleTilt', 'MirrorCompass', 'AntennaMarking']
-    save_images(image_keys, 'Sec2')
-    return redirect(url_for("presector3"))
+    site_code = session.get('site_code')  # Retrieve the site_code from the session
+    print("uploadimage2 sitecode", site_code)
+    save_images(image_keys, 'Sec2', site_code)  # Pass site_code to save_images function
+    return redirect(url_for("presector3", site_code=site_code))
 
 
 @app.route('/upload-images-3', methods=['POST'])
 def upload_images_3():
+    site_code = request.args.get('site_code')  # Retrieve site_code from query parameters
     image_keys = ['AzimuthCell', 'Mechanical', 'Electrical', 'AntennaHeight',
                   'PoleTilt', 'MirrorCompass', 'AntennaMarking']
-    save_images(image_keys, 'Sec3')
+    site_code = session.get('site_code')  # Retrieve the site_code from the session
+    print("uploadimage3 sitecode", site_code)
+    save_images(image_keys, 'Sec3', site_code)  # Pass site_code to save_images function
 
     # Zip the Predata_RAR folder
     shutil.make_archive(UPLOADS_DIR, 'zip', UPLOADS_DIR)
-    return redirect(url_for("post_data"))
+    return redirect(url_for("post_data", site_code=site_code))
 
-
-def save_images(image_keys, sec):
+def save_images(image_keys, sec, site_code):
     images = {}
     counter = 1
-    cellCount = 1
+    cell_count = 1
+
+    uploaded_images = {}
+
+    for key in image_keys:
+        file = request.files.get(key + sec)
+        if file:
+            images[key] = file
+            uploaded_images[key] = True
+        else:
+            images[key] = None
+            uploaded_images[key] = False
+
+    # Define the folder path for the site_code
+    site_folder = os.path.join(UPLOADS_DIR, site_code)
+    os.makedirs(site_folder, exist_ok=True)
+
+    # Define the path for the Excel file under the site_code folder
+    excel_file_path = os.path.join(site_folder, "predata.xlsx")
 
     # Load the existing workbook if it exists
     try:
         wb = openpyxl.load_workbook(excel_file_path)
     except FileNotFoundError:
-        # If the workbook doesn't exist, create a new one
         wb = openpyxl.Workbook()
 
     # Check if the sheet for the sector already exists
     if sec in wb.sheetnames:
-        # Get the existing sheet
         ws = wb[sec]
-
-        # Clear existing images in the sheet
-        for image in ws._images:
-            ws._images.remove(image)
+        ws._images = []  # Clear existing images in the sheet
     else:
-        # Create a new worksheet in the Excel file
         ws = wb.create_sheet(title=sec, index=0)
-
-    for key in image_keys:
-        file = request.files.get(key + sec)
-        images[key] = file if file else None
 
     for key, file in images.items():
         if file:
-            # Save the file in the uploads directory
-            file_path = os.path.join(UPLOADS_DIR, f"{sec}_{counter}.jpg")
+            # Save the file in the site folder
+            file_path = os.path.join(site_folder, secure_filename(f"{sec}_{counter}.jpg"))
             file.save(file_path)
 
-            # Store the image key name in the first column
-            key_cell = ws.cell(row=cellCount, column=1)
+            # Add image metadata to the Excel sheet
+            key_cell = ws.cell(row=cell_count, column=1)
             key_cell.value = key
             key_cell.font = Font(size='16', bold=True)
             key_cell.alignment = Alignment(horizontal='center', vertical='center')
+            ws.row_dimensions[cell_count].height = 300
+            ws.column_dimensions['B'].width = 50
+            ws.column_dimensions['A'].width = 20
 
-            # Add the new image to the cell in the second column
-            img_cell = ws.cell(row=cellCount, column=2)
-            # img_cell.value = f"{sec}_{counter}.jpg"
+            # Add image to the Excel sheet
             img = openpyxl.drawing.image.Image(file_path)
             img.width = 250
             img.height = 400
-            img.anchor = f'B{cellCount}'
+            img.anchor = f'B{cell_count}'
             ws.add_image(img)
 
-        cellCount += 1
+        cell_count += 2
         counter += 1
 
     # Save the modified Excel file
@@ -799,24 +828,44 @@ def save_images(image_keys, sec):
 
     # Upload Excel file to Firebase Storage
     bucket = storage.bucket()
-    excel_blob = bucket.blob('pre_data/images.xlsx')
+    excel_blob = bucket.blob(f'pre_data/{site_code}/predata.xlsx')
     excel_blob.upload_from_filename(excel_file_path)
     excel_url = excel_blob.public_url
 
-    # Create a zip file of the images directory
-    shutil.make_archive(UPLOADS_DIR, 'zip', UPLOADS_DIR)
-
-    # Upload the zip file to Firebase Storage
-    zip_blob = bucket.blob('zipF/Predata_RAR.zip')
-    zip_blob.upload_from_filename('uploads/Predata_RAR.zip')
+    # Create a zip file of the site folder
+    zip_file_path = shutil.make_archive(os.path.join(UPLOADS_DIR, site_code), 'zip', site_folder)
+    zip_blob = bucket.blob(f'zipF/{site_code}/predata.zip')
+    zip_blob.upload_from_filename(zip_file_path)
     zip_url = zip_blob.public_url
+
+    # Create a RAR file of the site folder (requires `rarfile` and `unrar` package, adjust as needed)
+    rar_file_path = f"{os.path.join(UPLOADS_DIR, site_code)}.rar"
+    shutil.make_archive(rar_file_path.replace('.rar', ''), 'zip', site_folder)  # Create a zip temporarily
+    shutil.move(f'{rar_file_path.replace(".rar", "")}.zip', rar_file_path)  # Rename the zip to rar
+    rar_blob = bucket.blob(f'zipF/{site_code}/predata.rar')
+    rar_blob.upload_from_filename(rar_file_path)
+    rar_url = rar_blob.public_url
 
     print("Files uploaded successfully to Firebase Storage")
     pre_save_url_to_firestore(excel_url, zip_url)
 
+    # Firestore update
+    db = firestore.client()
+    project_ref = db.collection('Projects').document(site_code)
+    parameter_data_ref = project_ref.collection('ParameterData')
+    pre_data_ref = parameter_data_ref.document('PreData')
+    sec_collection_ref = pre_data_ref.collection(sec)
+    status_doc_ref = sec_collection_ref.document('Status')
+
+    status_doc_ref.set(uploaded_images)
+    print("Data updated in Firestore successfully")
+
 
 def pre_save_url_to_firestore(excel_url, zip_url):
     today_date = datetime.today().strftime('%d-%m-%Y')
+
+    site_code = session.get('site_code')  # Retrieve the site_code from the session
+    print("uploadimage3 sitecode", site_code)
 
     # Create a dictionary with document data
     document_data = {
@@ -825,10 +874,9 @@ def pre_save_url_to_firestore(excel_url, zip_url):
         "Pre_Zip_File_URL": zip_url,
     }
 
-    db.collection("files").document(today_date).set(document_data)
+    db.collection("Projects").document(site_code).collection("ParameterData").document("PreData").set(document_data)
 
     print("File URLs and date saved to Firestore.")
-
 
 def upload_to_storage():
     bucket = storage.bucket()
@@ -860,16 +908,6 @@ def upload_to_storage():
 
         print("File URLs and document name saved to Firestore.")
 
-    def main():
-        excel_file_path = 'path/to/excel_file.xlsx'
-        document_name = input("Enter the site_id to store the file in: ")
-
-        # Upload files to Firebase Storage
-        excel_url, zip_url = upload_to_storage(excel_file_path)
-
-        # Save URLs to Firestore
-        save_urls_to_firestore(excel_url, zip_url)
-
     def upload_to_storage(excel_file_path):
         bucket = storage.bucket()
 
@@ -893,7 +931,7 @@ def upload_to_storage():
 
     print("Files uploaded successfully to Firestore")
     return excel_url,zip_url
-
+###################################################################################
 
 @app.route('/postdata.html', methods=['GET', 'POST'])
 def post_data():
