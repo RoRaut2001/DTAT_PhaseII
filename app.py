@@ -760,6 +760,7 @@ def upload_images_3():
 
     # Zip the Predata_RAR folder
     shutil.make_archive(UPLOADS_DIR, 'zip', UPLOADS_DIR)
+    clear_folder('uploads/Predata_RAR')
     return redirect(url_for("post_data", site_code=site_code))
 
 def save_images(image_keys, sec, site_code):
@@ -1047,10 +1048,12 @@ def postupload_images_1():
     postimage_keys = ['AzimuthCellSec1', 'MechanicalSec1', 'ElectricalSec1', 'AntennaHeightSec1',
                       'AntBuildingSec1', 'BuildHeightSec1', 'TowerHeightSec1', 'PoleTiltSec1', 'MirrorCompassSec1', 'AntennaMarkingSec1']
 
+    error_messages = []
+
     # Validate Azimuth image
     azimuth_file = request.files.get('AzimuthCellSec1')
     if azimuth_file:
-        print("Enters  in azimuth")
+        print("Enters in azimuth")
         client = vision.ImageAnnotatorClient()
         image_content = azimuth_file.read()
         image = vision.Image(content=image_content)
@@ -1061,17 +1064,19 @@ def postupload_images_1():
         if texts:
             print("enters in text")
             extracted_text = texts[0].description
+            print("extracted text", extracted_text)
             doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirement')
-            # print(doc_ref)
+            print(doc_ref)
             doc = doc_ref.get()
             if doc.exists:
                 print("enterindocs")
                 data = doc.to_dict()
-                expected_text = data.get('azimuth', '')
+                expected_text = data.get('AzimuthCell', '')
+                print("Expected Text for Azimuth sector 1:", expected_text)
                 if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid Azimuth image'}), 400
+                    error_messages.append('Invalid Azimuth image')
         else:
-            return jsonify({'error': 'No text found in the Azimuth image.'}), 400
+            error_messages.append('No text found in the Azimuth image.')
 
     # Validate AntennaHeight image
     antenna_height_file = request.files.get('AntennaHeightSec1')
@@ -1091,12 +1096,14 @@ def postupload_images_1():
             if doc.exists:
                 print("enter in docs")
                 data = doc.to_dict()
-                expected_text = data.get('antenna_height', '')
+                expected_text = data.get('AntennaHeight', '')
+                print("Expected Text for AntennaHeight sector 1:", expected_text)
                 if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid AntennaHeight image'}), 400
+                    error_messages.append('Invalid AntennaHeight image')
         else:
-            return jsonify({'error': 'No text found in the AntennaHeight image.'}), 400
+            error_messages.append('No text found in the AntennaHeight image.')
 
+    # Validate BuildHeight image
     build_height_file = request.files.get('BuildHeightSec1')
     if build_height_file:
         client = vision.ImageAnnotatorClient()
@@ -1113,9 +1120,9 @@ def postupload_images_1():
                 data = doc.to_dict()
                 expected_text = data.get('build_height', '')
                 if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid BuildHeight image'}), 400
+                    error_messages.append('Invalid BuildHeight image')
         else:
-            return jsonify({'error': 'No text found in the BuildHeight image.'}), 400
+            error_messages.append('No text found in the BuildHeight image.')
 
     # Validate TowerHeight image
     tower_height_file = request.files.get('TowerHeightSec1')
@@ -1132,16 +1139,21 @@ def postupload_images_1():
             doc = doc_ref.get()
             if doc.exists:
                 data = doc.to_dict()
-                expected_text = data.get('tower_height', '')
+                expected_text = data.get('TowerHeight', '')
                 if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid TowerHeight image'}), 400
+                    error_messages.append('Invalid TowerHeight image')
         else:
-            return jsonify({'error': 'No text found in the TowerHeight image.'}), 400
+            error_messages.append('No text found in the TowerHeight image.')
+
+    # If there are any error messages, return them
+    if error_messages:
+        return jsonify({'errors': error_messages}), 400
 
     # If neither validation fails, proceed with saving other images
     postsave_images(postimage_keys, 'sector1', site_code)
     print("saving post image")
     return redirect(url_for("postsector2"))
+
 
 
 @app.route('/postupload-images-2', methods=['POST'])
@@ -1174,7 +1186,7 @@ def postupload_images_2():
             if doc.exists:
                 print("enterindocs")
                 data = doc.to_dict()
-                expected_text = data.get('azimuth', '')
+                expected_text = data.get('AzimuthCell', '')
                 if expected_text not in extracted_text:
                     return jsonify({'error': 'Invalid Azimuth image'}), 400
         else:
@@ -1198,7 +1210,7 @@ def postupload_images_2():
             if doc.exists:
                 print("enter in docs")
                 data = doc.to_dict()
-                expected_text = data.get('antenna_height', '')
+                expected_text = data.get('AntennaHeight', '')
                 if expected_text not in extracted_text:
                     return jsonify({'error': 'Invalid AntennaHeight image'}), 400
         else:
@@ -1239,7 +1251,7 @@ def postupload_images_2():
             doc = doc_ref.get()
             if doc.exists:
                 data = doc.to_dict()
-                expected_text = data.get('tower_height', '')
+                expected_text = data.get('TowerHeight', '')
                 if expected_text not in extracted_text:
                     return jsonify({'error': 'Invalid TowerHeight image'}), 400
         else:
@@ -1282,7 +1294,7 @@ def postupload_images_3():
             if doc.exists:
                 print("enterindocs")
                 data = doc.to_dict()
-                expected_text = data.get('azimuth', '')
+                expected_text = data.get('AzimuthCell', '')
                 if expected_text not in extracted_text:
                     return jsonify({'error': 'Invalid Azimuth image'}), 400
         else:
@@ -1306,7 +1318,7 @@ def postupload_images_3():
             if doc.exists:
                 print("enter in docs")
                 data = doc.to_dict()
-                expected_text = data.get('antenna_height', '')
+                expected_text = data.get('AntennaHeight', '')
                 if expected_text not in extracted_text:
                     return jsonify({'error': 'Invalid AntennaHeight image'}), 400
         else:
@@ -1347,7 +1359,7 @@ def postupload_images_3():
             doc = doc_ref.get()
             if doc.exists:
                 data = doc.to_dict()
-                expected_text = data.get('tower_height', '')
+                expected_text = data.get('TowerHeight', '')
                 if expected_text not in extracted_text:
                     return jsonify({'error': 'Invalid TowerHeight image'}), 400
         else:
@@ -1356,6 +1368,7 @@ def postupload_images_3():
     # If neither validation fails, proceed with saving other images
     postsave_images(postimage_keys, 'sector3', site_code)
     print("saving post image")
+    clear_folder('postuploads/Postdata_RAR')
     return redirect(url_for("post_data"))
 
 
@@ -1462,7 +1475,6 @@ def postsave_images(postimage_keys, postsec, siteCode):
     print("Files uploaded successfully to Firebase Storage")
     post_save_url_to_firestore(excel_url, zip_url)
     # shutil.rmtree(f'postuploads/Postdata_RAR/{site_code}')
-    clear_folder('postuploads/Postdata_RAR')
 
     print("Data updated in Firestore successfully")
 
