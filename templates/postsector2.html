@@ -190,17 +190,17 @@
         <td>
             <input
                     type="file"
-                    id="AzimuthCellSec1"
-                    name="AzimuthCellSec1"
+                    id="AzimuthCellSec2"
+                    name="AzimuthCellSec2"
                     accept="image/*"
-                    onchange="displayFileName('AzimuthCellSec1', 'AzimuthImageSec1')"
+                    onchange="displayFileName('AzimuthCellSec2', 'AzimuthImageSec2')"
             />
             <button
-                    onclick="document.getElementById('AzimuthCellSec1').click()"
+                    onclick="document.getElementById('AzimuthCellSec2').click()"
             >
                 Upload
             </button>
-            <span id="AzimuthImageSec1"></span>
+            <span id="AzimuthImageSec2"></span>
         </td>
 
         <td>{{ requirements['AzimuthCell'] }}</td>
@@ -317,50 +317,5 @@
       You successfully uploaded images for sector-2
     </p>
 
-    <script>
-      let imagesFile = {};
-
-      function storeImageFile(file, inputId) {
-        imagesFile[inputId] = file;
-        displayFileName(inputId, inputId.replace("Sec2", "ImageSec2"));
-      }
-
-      function displayFileName(inputId, spanId) {
-        const input = document.getElementById(inputId);
-        const fileNameSpan = document.getElementById(spanId);
-        if (input.files.length > 0) {
-          fileNameSpan.textContent = input.files[0].name;
-        } else {
-          fileNameSpan.textContent = "";
-        }
-      }
-
-      function submitForm2() {
-        const formData = new FormData();
-
-        const fileInputs = document.querySelectorAll('input[type="file"]');
-        fileInputs.forEach((input) => {
-          const file = input.files[0];
-          formData.append(input.name, file);
-        });
-
-        fetch("/postupload-images-2", {
-          method: "POST",
-          body: formData,
-        })
-          .then((response) => {
-            if (response.ok) {
-              document.getElementById("successMessage").style.display = "block";
-              window.location.href = "postsector3.html";
-            } else {
-              return alert("Failed to redirect");
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            alert("Error uploading images");
-          });
-      }
-    </script>
   </body>
 </html>

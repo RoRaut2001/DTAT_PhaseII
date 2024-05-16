@@ -184,107 +184,112 @@
     }
 
     // Function for submitting form for postsector1.html
-    function postsubmitForm1() {
-        const formData = new FormData();
+function postsubmitForm1() {
+    const formData = new FormData();
 
-        const fileInputs = document.querySelectorAll('input[type="file"]');
-        fileInputs.forEach((input) => {
-            const file = input.files[0];
-            formData.append(input.name, file);
-        });
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach((input) => {
+        const file = input.files[0];
+        formData.append(input.name, file);
+    });
 
-        fetch("/postupload-images-1", {
-            method: "POST",
-            body: formData,
-        })
-        .then((response) => {
-            if (response.ok) {
-            if (window.innerWidth <= 600) {
-                // Display mobile view success message
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Successfully uploaded images for sector-1',
-                    confirmButtonText: 'OK'
-                });
-            } else {
-                // Display web view success message
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Successfully uploaded images for sector-1',
-                    confirmButtonText: 'OK'
-                });
-            }
+    fetch("/postupload-images-1", {
+        method: "POST",
+        body: formData,
+    })
+    .then((response) => response.json().then(data => ({ status: response.status, body: data })))
+    .then(({ status, body }) => {
+        if (status === 200) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: 'Successfully uploaded images for sector-1',
+                confirmButtonText: 'OK'
+            });
+        } else if (status === 400 && body.errors && body.errors.length > 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                html: body.errors.join('<br>'),  // Join all error messages with a line break
+                confirmButtonText: 'OK'
+            });
         } else {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'Please select correct image',
+                text: 'Please select the correct image',
                 confirmButtonText: 'OK'
             });
         }
     })
     .catch((error) => {
         console.error("Error:", error);
-    });
-}
-    // Function for submitting form for postsector2.html
-    function submitForm2() {
-        const formData = new FormData();
-
-        const fileInputs = document.querySelectorAll('input[type="file"]');
-        fileInputs.forEach((input) => {
-            const file = input.files[0];
-            formData.append(input.name, file);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while uploading images: ${error.message || error}',
+            confirmButtonText: 'OK'
         });
-
-        fetch("/postupload-images-2", {
-            method: "POST",
-            body: formData,
-        })
-        .then((response) => {
-            if (response.ok) {
-      // Display success message using SweetAlert
-      Swal.fire({
-        icon: 'success',
-        title: 'Success',
-        text: 'Successfully uploaded images for sector-2',
-        confirmButtonText: 'OK',
-        onClose: () => {
-          // Redirect to the next page after closing the popup
-<!--          window.location.href = "presector3.html";-->
-        }
-      });
-    } else {
-      // Display error message using SweetAlert
-      Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
-        text: 'Please select correct image',
-        confirmButtonText: 'OK'
-      });
-    }
-  })
-  .catch((error) => {
-    // Display error message using SweetAlert
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'An error occurred while uploading images.',
-      confirmButtonText: 'OK'
     });
-    console.error("Error:", error);
-  });
 }
 
 
-
-    // Function for submitting form for postsector3.html
-   function submitForm3() {
+    // Function for submitting form for postsector2.html
+function submitForm2() {
     const formData = new FormData();
 
     const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach((input) => {
+        const file = input.files[0];
+        formData.append(input.name, file);
+    });
+
+    fetch("/postupload-images-2", {
+        method: "POST",
+        body: formData,
+    })
+    .then((response) => response.json().then(data => ({ status: response.status, body: data })))
+    .then(({ status, body }) => {
+        if (status === 200) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: 'Successfully uploaded images for sector-2',
+                confirmButtonText: 'OK'
+            });
+        } else if (status === 400 && body.errors && body.errors.length > 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                html: body.errors.join('<br>'),  // Join all error messages with a line break
+                confirmButtonText: 'OK'
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select the correct image',
+                confirmButtonText: 'OK'
+            });
+        }
+    })
+    .catch((error) => {
+        console.error("Error:", error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred while uploading images: ${error.message || error}',
+            confirmButtonText: 'OK'
+        });
+    });
+}
+
+
+// Function for submitting form for postsector3.html
+function submitForm3() {
+    const formData = new FormData();
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+
     fileInputs.forEach((input) => {
         const file = input.files[0];
         formData.append(input.name, file);
@@ -294,47 +299,68 @@
         method: "POST",
         body: formData,
     })
-    .then((response) => {
-        if (response.ok) {
+    .then((response) => response.json().then(data => ({ status: response.status, body: data })))
+    .then(({ status, body }) => {
+        if (status === 200) {
+            // Display success message using SweetAlert and then ask for confirmation
             Swal.fire({
                 icon: 'success',
                 title: 'Success',
                 text: 'Successfully uploaded images for sector-3',
-                confirmButtonText: 'OK',
-                onClose: () => {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Confirmation',
-                        text: 'Are you sure you want to submit post data?',
-                        showCancelButton: true,
-                        confirmButtonText: 'Yes',
-                        cancelButtonText: 'No'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            window.location.href = "/welcomeuser";
-                        }
-                    });
-                }
+                confirmButtonText: 'OK'
+            }).then(() => {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "Are you confirm to submit post data?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, submit it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = "/welcomeuser";
+                    }
+                });
+            });
+        } else if (status === 400) {
+            // Display specific error messages using SweetAlert
+            let errorMessage = '';
+            if (body.errors) {
+                body.errors.forEach((error) => {
+                    errorMessage += error + '\n';
+                });
+            } else {
+                errorMessage = 'Please select the correct image';
+            }
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: errorMessage,
+                confirmButtonText: 'OK'
             });
         } else {
-            throw new Error("Failed to redirect");
+            // Display generic error message using SweetAlert
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'An error occurred while uploading images.',
+                confirmButtonText: 'OK'
+            });
         }
     })
     .catch((error) => {
-        console.error("Error:", error);
+        // Display error message using SweetAlert
         Swal.fire({
             icon: 'error',
             title: 'Error',
             text: 'An error occurred while uploading images.',
             confirmButtonText: 'OK'
         });
+        console.error("Error:", error);
     });
 }
 
-
-
 </script>
-
-
 </body>
 </html>

@@ -323,48 +323,5 @@
       You successfully uploaded images for sector-3
     </p>
 
-    <script>
-      let imagesFile = {};
-
-    function storeImageFile(file, inputId) {
-      imagesFile[inputId] = file;
-      displayFileName(inputId, inputId.replace("Sec3", "ImageSec3"));
-    }
-
-    function displayFileName(inputId, spanId) {
-      const input = document.getElementById(inputId);
-      const fileNameSpan = document.getElementById(spanId);
-      if (input.files.length > 0) {
-        fileNameSpan.textContent = input.files[0].name;
-      } else {
-        fileNameSpan.textContent = "";
-      }
-    }
-
-    function submitForm3() {
-      const formData = new FormData();
-
-      for (const inputId in imagesFile) {
-        formData.append(inputId, imagesFile[inputId]);
-      }
-
-      fetch("/upload-images-3", {
-        method: "POST",
-        body: formData,
-      })
-        .then((response) => {
-          if (response.ok) {
-            document.getElementById("successMessage").style.display = "block";
-            window.location.href = "/welcomeuser";
-          } else {
-            throw new Error("Failed to redirect");
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          alert("Error uploading images");
-        });
-    }
-    </script>
   </body>
 </html>
