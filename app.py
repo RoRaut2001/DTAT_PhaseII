@@ -582,32 +582,44 @@ def fillpostdata():
 def submit_form():
     try:
         # Get form data
-        site_id = request.form.get('siteId')
-        sector = request.form.get('sector')
-        azimuth = request.form.get('azimuth')
-        tower_height = request.form.get('towerHeight')
-        mechanical_cell = request.form.get('mechanicalCell')
-        electrical_cell = request.form.get('electricalCell')
-        pole_tilt = request.form.get('poleTilt')
-        antenna_height = request.form.get('antennaheight')
+        site_id = request.json.get('siteId')
+        sector = request.json.get('sector')
+        azimuth = request.json.get('azimuth')
+        azimuthMeasurement = request.json.get('azimuthMeasurement')
+        tower_height = request.json.get('towerHeight')
+        tower_heightMeasurement = request.json.get('towerHeightMeasurement')
+        mechanical_cell = request.json.get('mechanicalCell')
+        electrical_cell = request.json.get('electricalCell')
+        pole_tilt = request.json.get('poleTilt')
+        antenna_height = request.json.get('antennaheight')
+        antenna_heightMeasurement = request.json.get('antennaheightMeasurement')
+        building_height = request.json.get('buildingheight')
+        building_heightMeasurement = request.json.get('buildingheightMeasurement')
+
+        # Check for None values and raise an error if found
+        # if not all([site_id, sector, azimuth, azimuthMeasurement, tower_height, tower_heightMeasurement, mechanical_cell, electrical_cell, pole_tilt, antenna_height, antenna_heightMeasurement, building_height, building_heightMeasurement]):
+        #     raise ValueError("All fields are required and must be provided.")
 
         doc_ref = db.collection('Projects').document(site_id).collection("ParameterData").document(
             "PostData").collection(sector).document("Requirement")
+
         if not doc_ref.get().exists:
             doc_ref.set({})
+
         doc_ref.set({
-            'AzimuthCell': azimuth,
-            'TowerHeight': tower_height,
-            'Mechanical': mechanical_cell,
-            'Electrical': electrical_cell,
-            'PoleTilt': pole_tilt,
-            'AntennaHeight': antenna_height
+            'azimuth': azimuth + azimuthMeasurement,
+            'tower_height': tower_height + tower_heightMeasurement,
+            'mechanical_cell': mechanical_cell,
+            'electrical_cell': electrical_cell,
+            'pole_tilt': pole_tilt,
+            'antenna_height': antenna_height + antenna_heightMeasurement,
+            'building_height': building_height + building_heightMeasurement
         })
 
-        return redirect(url_for('fillpostdata'))
+        return jsonify({"success": True, "message": f"Data successfully saved for {sector}"})
     except Exception as e:
         print("Error submitting form:", e)
-        return "An error occurred while submitting the form."
+        return jsonify({"success": False, "message": f"Error submitting form: {str(e)}"}), 400
 
 
 
@@ -1282,6 +1294,195 @@ def postupload_images_2():
     except Exception as e:
         print(f"An error occurred: {e}")
         return jsonify({'errors': [str(e)]}), 500
+
+
+
+@app.route("/ChangePostRequirements", methods=['PUT'])
+def change_post_requirements():
+    site_code = session.get('site_code')   # Retrieve SiteID from session       
+    return render_template("ChangePostRequirements.html")
+    
+
+# Updated route for fetching all employees
+@app.route("/EmployeeSettings", methods=["GET"])
+def employee_settings():
+    # Retrieve employee data from Firestore
+    employees_ref = db.collection("UserDetails")
+    employees = employees_ref.stream()
+    if request.method == "GET":
+        search_query = request.args.get("query")
+        if search_query:
+            # Perform search based on the query
+            query = employees_ref.where("employee_Name", ">=", search_query).where("employee_Name", "<=", search_query + "\uf8ff")
+            employees = query.stream()
+        else:
+            employees = employees_ref.stream()
+    employee_list = []
+    # Enumerate through employees and assign incremental IDs
+    for index, employee in enumerate(employees, start=1):
+        
+        employee_data = employee.to_dict()
+        employee_list.append({"index": index,"uid": employee.id, "name": employee_data.get("employee_Name"), "email": employee_data.get("email"), "circle_name": employee_data.get("circle_name"), "isAdmin": employee_data.get("isAdmin")})
+    
+    # Pass employee data to the template
+    return render_template('EmployeeSettings.html', employees=employee_list)
+
+@app.route("/update_employee", methods=["PUT"])
+def update_employee():
+    try:
+        employee_id = request.json.get("id")
+        name = request.json.get("name")
+        email = request.json.get("email")
+        circle_name = request.json.get("circle_name")
+        is_admin = request.json.get("is_admin") == "true"
+
+        # Update employee data in Firestore
+        employee_ref = db.collection("UserDetails").document(employee_id)
+        employee_ref.update({
+            "employee_Name": name,
+            "email": email,
+            "circle_name": circle_name,
+            "isAdmin": is_admin
+        })
+
+        return jsonify({"message": "Employee data updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Define route for deleting employee data
+@app.route("/delete_employee", methods=["POST"])
+def delete_employee():
+    try:
+        # Retrieve employee ID from the request
+        employee_id = request.json.get("id")
+
+        # Delete employee data from Firestore
+        employee_ref = db.collection("UserDetails").document(employee_id)
+        employee_ref.delete()
+
+        return jsonify({"message": "Employee deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/ChangePostRequirements')
+def index():
+    return render_template('ChangePostRequirements.html')
+
+
+
+
+def fetch_all_data_from_firebase(site_code, sector):
+    # Initialize an empty dictionary to store the fetched data
+    data = {}
+
+    # Construct the path to the document in Firestore
+    document_path = f"Projects/{site_code}/ParameterData/PostData/{sector}/Requirement"
+
+    # Retrieve the document from Firestore
+    doc_ref = db.document(document_path)
+    doc = doc_ref.get()
+
+    # Check if the document exists
+    if doc.exists:
+        # Extract data from the document
+        doc_data = doc.to_dict()
+        data["azimuth"] = doc_data.get("azimuth", "")
+        data["electrical_cell"] = doc_data.get("electrical_cell", "")
+        data["mechanical_cell"] = doc_data.get("mechanical_cell", "")
+        data["pole_tilt"] = doc_data.get("pole_tilt", "")
+        data["tower_height"] = doc_data.get("tower_height", "")
+        data['antenna_height'] = doc_data.get('antenna_height', "")
+        data['building_height'] = doc_data.get('building_height', "")
+    else:
+        # If document doesn't exist, return an error message
+        return {"error": "No data found for the provided Site ID and Sector"}
+
+    return data
+
+def update_data_in_firebase(site_code, sector, data):
+    # Construct the path to the document in Firestore
+    document_path = f"Projects/{site_code}/ParameterData/PostData/{sector}/Requirement"
+
+    # Retrieve the document reference from Firestore
+    doc_ref = db.document(document_path)
+
+    # Update the document with the new data
+    doc_ref.update(data)
+
+    # Return success message
+    return {"message": "Data updated successfully"}
+
+#updated on 16-05-2024
+@app.route('/fetch_and_update_data', methods=['GET', 'POST'])
+def fetch_and_update_data():
+    if request.method == 'GET':
+        site_id = request.args.get('site_id')
+        sector = request.args.get('sector')
+        # Call function to fetch all data from Firebase
+        data = fetch_all_data_from_firebase(site_id, sector)
+        return jsonify(data)
+    elif request.method == 'POST':
+        site_id = request.form['site_id']
+        sector = request.form['sector']
+        azimuth = request.form['azimuth']
+        electrical_cell = request.form['electrical_cell']
+        mechanical_cell = request.form['mechanical_cell']
+        pole_tilt = request.form['pole_tilt']
+        tower_height = request.form['tower_height']
+        antenna_height = request.form['antenna_height']
+        building_height = request.form['building_height']
+        # Construct data dictionary for update
+        updated_data = {
+            "azimuth": azimuth,
+            "electrical_cell": electrical_cell,
+            "mechanical_cell": mechanical_cell,
+            "pole_tilt": pole_tilt,
+            "tower_height": tower_height,
+            "antenna_height": antenna_height,
+            "building_height": building_height,
+        }
+        # Call function to update data in Firebase
+        update_data_in_firebase(site_id, sector, updated_data)
+        return jsonify({"message": "Data updated successfully"})
+
+
+def delete_record_from_firebase(site_code, sector):
+    # Construct the path to the document in Firestore
+    document_path = f"Projects/{site_code}/ParameterData/PostData/{sector}/Requirement"
+
+    # Retrieve the document reference from Firestore
+    doc_ref = db.document(document_path)
+
+    # Check if the document exists
+    doc = doc_ref.get()
+    if not doc.exists:
+        # If document doesn't exist, return an error message
+        return {"error": "Site ID and selected sector do not exist"}
+
+    # Delete the document
+    doc_ref.delete()
+
+    # Return success message
+    return {"message": "Record deleted successfully"}
+
+@app.route('/delete_record', methods=['POST'])
+def delete_record():
+    site_code = request.json['site_code']  # Adjusted field name to match the client expectation
+    sector = request.json['sector']
+
+    # Call function to delete record from Firebase
+    result = delete_record_from_firebase(site_code, sector)
+    
+    if "error" in result:
+        # If an error occurred, return the error message
+        return jsonify({"error": result["error"]})
+
+    return jsonify({"message": "Record deleted successfully"})
+
+
+
+
+
 
 
 @app.route('/postupload-images-3', methods=['POST'])
