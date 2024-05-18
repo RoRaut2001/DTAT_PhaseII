@@ -171,143 +171,143 @@
   </head>
   <body>
     <div class="heading-container">
-<!--      <img src="static/logo_light.png" alt="Logo" class="logo" />-->
       <h1>Sector II</h1>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th><b>Image Name </b></th>
-          <th><b>Action</b></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Azimuth Cell</td>
-          <td>
-            <button
-              onclick="document.getElementById('AzimuthCellSec2').click()"
-            >
-              Upload
-            </button>
+
+<table>
+    <thead>
+    <tr>
+        <th><b>Image Name</b></th>
+        <th><b>Action</b></th>
+        <th><b>Requirements</b></th>
+    </tr>
+    </thead>
+    <tbody>
+
+    <tr>
+        <td>Azimuth Cell</td>
+        <td>
             <input
-              type="file"
-              id="AzimuthCellSec2"
-              name="AzimuthCellSec2"
-              accept="image/*"
-              onchange="displayFileName('AzimuthCellSec2', 'AzimuthImageSec2')"
+                    type="file"
+                    id="AzimuthCellSec2"
+                    name="AzimuthCellSec2"
+                    accept="image/*"
+                    onchange="displayFileName('AzimuthCellSec2', 'AzimuthImageSec2')"
             />
+            <button
+                    onclick="document.getElementById('AzimuthCellSec2').click()"
+            >
+                Upload
+            </button>
             <span id="AzimuthImageSec2"></span>
-          </td>
-        </tr>
-        <tr>
-          <td>Mechanical Cell</td>
-          <td>
-            <button onclick="document.getElementById('MechanicalSec2').click()">
-              Upload
-            </button>
+        </td>
+
+        <td>{{ requirements['AzimuthCell'] }}</td>
+    </tr>
+    <tr>
+        <td>Mechanical Cell</td>
+        <td>
             <input
-              type="file"
-              id="MechanicalSec2"
-              name="MechanicalSec2"
-              accept="image/*"
-              onchange="displayFileName('MechanicalSec2','MechanicalImageSec2')"
+                    type="file"
+                    id="MechanicalSec2"
+                    name="MechanicalSec2"
+                    accept="image/*"
+                    onchange="displayFileName('MechanicalSec2', 'MechanicalImageSec2')"
             />
+            <button
+                    onclick="document.getElementById('MechanicalSec2').click()"
+            >
+                Upload
+            </button>
             <span id="MechanicalImageSec2"></span>
-          </td>
-        </tr>
-        <tr>
-          <td>Electrical Cell</td>
-          <td>
-            <button onclick="document.getElementById('ElectricalSec2').click()">
-              Upload
-            </button>
+        </td>
+
+        <td>{{ requirements['Mechanical'] }}</td>
+    </tr>
+    <tr>
+        <td>Electrical Cell</td>
+        <td>
             <input
-              type="file"
-              id="ElectricalSec2"
-              name="ElectricalSec2"
-              accept="image/*"
-              onchange="displayFileName('ElectricalSec2','ElectricalImageSec2')"
+                    type="file"
+                    id="ElectricalSec2"
+                    name="ElectricalSec2"
+                    accept="image/*"
+                    onchange="displayFileName('ElectricalSec2', 'ElectricalImageSec2')"
             />
+            <button
+                    onclick="document.getElementById('ElectricalSec2').click()"
+            >
+                Upload
+            </button>
             <span id="ElectricalImageSec2"></span>
-          </td>
-        </tr>
-        <tr>
-          <td>Antenna Height</td>
-          <td>
-            <button
-              onclick="document.getElementById('AntennaHeightSec2').click()"
-            >
-              Upload
-            </button>
-            <input
-              type="file"
-              id="AntennaHeightSec2"
-              name="AntennaHeightSec2"
-              accept="image/*"
-              onchange="displayFileName('AntennaHeightSec2','AntHeightImageSec2')"
-            />
-            <span id="AntHeightImageSec2"></span>
-          </td>
-        </tr>
+        </td>
 
-        <tr>
-          <td>Pole Tilt</td>
-          <td>
-            <button onclick="document.getElementById('PoleTiltSec2').click()">
-              Upload
-            </button>
+        <td>{{ requirements['Electrical'] }}</td>
+    </tr>
+    <tr>
+        <td>Tower Height</td>
+        <td>
             <input
-              type="file"
-              id="PoleTiltSec2"
-              name="PoleTiltSec2"
-              accept="image/*"
-              onchange="displayFileName('PoleTiltSec2','PoleTiltImageSec2')"
+                    type="file"
+                    id="TowerHeightSec2"
+                    name="TowerHeightSec2"
+                    accept="image/*"
+                    onchange="displayFileName('TowerHeightSec2', 'TowerHeightImageSec2')"
             />
+            <button
+                    onclick="document.getElementById('TowerHeightSec2').click()"
+            >
+                Upload
+            </button>
+            <span id="TowerHeightImageSec2"></span>
+        </td>
+
+        <td>{{ requirements['TowerHeight'] }}</td>
+    </tr>
+    <tr>
+        <td>Pole Tilt</td>
+        <td>
+            <input
+                    type="file"
+                    id="PoleTiltSec2"
+                    name="PoleTiltSec2"
+                    accept="image/*"
+                    onchange="displayFileName('PoleTiltSec2', 'PoleTiltImageSec2')"
+            />
+            <button
+                    onclick="document.getElementById('PoleTiltSec2').click()"
+            >
+                Upload
+            </button>
             <span id="PoleTiltImageSec2"></span>
-          </td>
-        </tr>
-        <tr>
-          <td>Mirror Compass Photo</td>
-          <td>
-            <button
-              onclick="document.getElementById('MirrorCompassSec2').click()"
-            >
-              Upload
-            </button>
-            <input
-              type="file"
-              id="MirrorCompassSec2"
-              name="MirrorCompassSec2"
-              accept="image/*"
-              onchange="displayFileName('MirrorCompassSec2','MirrorCompassImageSec2')"
-            />
-            <span id="MirrorCompassImageSec2"></span>
-          </td>
-        </tr>
-        <tr>
-          <td>Antenna Marking Photo</td>
-          <td>
-            <button
-              onclick="document.getElementById('AntennaMarkingSec2').click()"
-            >
-              Upload
-            </button>
-            <input
-              type="file"
-              id="AntennaMarkingSec2"
-              name="AntennaMarkingSec2"
-              accept="image/*"
-              onchange="displayFileName('AntennaMarkingSec2','AntMarkingImageSec2')"
-            />
-            <span id="AntMarkingImageSec2"></span>
-          </td>
-        </tr>
+        </td>
 
-        <!-- Add similar rows for other buttons and file inputs -->
-      </tbody>
-    </table>
+        <td>{{ requirements['PoleTilt'] }}</td>
+    </tr>
+    <tr>
+        <td>Antenna Height</td>
+        <td>
+            <input
+                    type="file"
+                    id="AntennaHeightSec2"
+                    name="AntennaHeightSec2"
+                    accept="image/*"
+                    onchange="displayFileName('AntennaHeightSec2', 'AntennaHeightImageSec2')"
+            />
+            <button
+                    onclick="document.getElementById('AntennaHeightSec2').click()"
+            >
+                Upload
+            </button>
+            <span id="AntennaHeightImageSec2"></span>
+        </td>
+
+        <td>{{ requirements['AntennaHeight'] }}</td>
+    </tr>
+
+    </tbody>
+</table>
 
     <button id="submitButton" onclick="submitForm2()">Submit</button>
     <p
@@ -317,50 +317,5 @@
       You successfully uploaded images for sector-2
     </p>
 
-    <script>
-      let imagesFile = {};
-
-      function storeImageFile(file, inputId) {
-        imagesFile[inputId] = file;
-        displayFileName(inputId, inputId.replace("Sec2", "ImageSec2"));
-      }
-
-      function displayFileName(inputId, spanId) {
-        const input = document.getElementById(inputId);
-        const fileNameSpan = document.getElementById(spanId);
-        if (input.files.length > 0) {
-          fileNameSpan.textContent = input.files[0].name;
-        } else {
-          fileNameSpan.textContent = "";
-        }
-      }
-
-      function submitForm2() {
-        const formData = new FormData();
-
-        const fileInputs = document.querySelectorAll('input[type="file"]');
-        fileInputs.forEach((input) => {
-          const file = input.files[0];
-          formData.append(input.name, file);
-        });
-
-        fetch("/postupload-images-2", {
-          method: "POST",
-          body: formData,
-        })
-          .then((response) => {
-            if (response.ok) {
-              document.getElementById("successMessage").style.display = "block";
-              window.location.href = "postsector3.html";
-            } else {
-              return alert("Failed to redirect");
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            alert("Error uploading images");
-          });
-      }
-    </script>
   </body>
 </html>

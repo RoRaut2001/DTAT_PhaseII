@@ -162,75 +162,75 @@
         }
     }
 
-    // Function for loading sector content
-    function loadSector(sectorUrl) {
-        const xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                document.getElementById('sectorContent').innerHTML = xhr.responseText;
-            }
-        };
-        xhr.open('GET', sectorUrl, true);
-        xhr.send();
-    }
+        function loadSector(sectorUrl) {
+            // Get the site_code parameter from the URL
+            var urlParams = new URLSearchParams(window.location.search);
+            var siteCode = urlParams.get('site_code');
 
-   // Function for submitting form for postsector1.html
-function submitForm1() {
-    const formData = new FormData();
+            // Append the site_code parameter to the sectorUrl
+            var urlWithSiteCode = sectorUrl + '?site_code=' + siteCode;
 
-    const fileInputs = document.querySelectorAll('input[type="file"]');
-    fileInputs.forEach((input) => {
-        const file = input.files[0];
-        formData.append(input.name, file);
-    });
+            const xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    document.getElementById('sectorContent').innerHTML = xhr.responseText;
+                }
+            };
+            xhr.open('GET', urlWithSiteCode, true);
+            xhr.send();
+        }
 
-    fetch("/upload-images-1", {
-        method: "POST",
-        body: formData,
-    })
-    .then((response) => {
-        if (response.ok) {
-            if (window.innerWidth <= 600) {
-                // Display mobile view success message
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Successfully uploaded images for sector-1',
-                    confirmButtonText: 'OK'
-                });
-            } else {
-                // Display web view success message
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: 'Successfully uploaded images for sector-1',
-                    confirmButtonText: 'OK'
-                });
-            }
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Please select correct image',
-                confirmButtonText: 'OK'
+
+        function submitForm1() {
+            const formData = new FormData();
+
+            const fileInputs = document.querySelectorAll('input[type="file"]');
+            fileInputs.forEach((input) => {
+                const file = input.files[0];
+                formData.append(input.name, file);
+            });
+
+            fetch("/upload-images-1", {
+                method: "POST",
+                body: formData,
+            })
+            .then((response) => {
+                if (response.ok) {
+                    if (window.innerWidth <= 600) {
+                        // Display mobile view success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Successfully uploaded images for sector-1',
+                            confirmButtonText: 'OK'
+                        });
+                    } else {
+                        // Display web view success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: 'Successfully uploaded images for sector-1',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Please select correct image',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error("Error:", error);
             });
         }
-    })
-    .catch((error) => {
-        console.error("Error:", error);
-<!--        Swal.fire({-->
-<!--            icon: 'error',-->
-<!--            title: 'Error',-->
-<!--            text: 'Error uploading images',-->
-<!--            confirmButtonText: 'OK'-->
-<!--        });-->
-    });
-}
 
-// Load presector1.html by default when the page loads
-window.onload = function() {
-    loadSector('presector1.html');
-}
+        // Load presector1.html by default when the page loads
+        window.onload = function() {
+            loadSector('presector1.html');
+        }
 
 
 

@@ -338,6 +338,7 @@
     <button id="submitButton" onclick="submitForm1()">Submit</button>
 
 
+
      <p id="mobileSuccessMessage" style="color: #333333; margin-top: 70px; margin-left: 25%; display: none">
       <!-- Message for mobile view -->
       Successfully uploaded images for sector-1
@@ -371,6 +372,11 @@
         const file = input.files[0];
         formData.append(input.name, file);
       });
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const site_code = urlParams.get('site_code');
+      console.log(site_code);
+      formData.append('Site_code', site_code);
 
       fetch("/upload-images-1", {
         method: "POST",
