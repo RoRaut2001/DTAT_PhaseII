@@ -4,7 +4,7 @@
     <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoredPackages">
         <value>
-          <list size="101">
+          <list size="122">
             <item index="0" class="java.lang.String" itemvalue="yarg" />
             <item index="1" class="java.lang.String" itemvalue="pickleshare" />
             <item index="2" class="java.lang.String" itemvalue="defusedxml" />
@@ -106,6 +106,27 @@
             <item index="98" class="java.lang.String" itemvalue="google-cloud-firestore" />
             <item index="99" class="java.lang.String" itemvalue="google-auth" />
             <item index="100" class="java.lang.String" itemvalue="openpyxl" />
+            <item index="101" class="java.lang.String" itemvalue="opencv-contrib-python" />
+            <item index="102" class="java.lang.String" itemvalue="scipy" />
+            <item index="103" class="java.lang.String" itemvalue="joblib" />
+            <item index="104" class="java.lang.String" itemvalue="threadpoolctl" />
+            <item index="105" class="java.lang.String" itemvalue="opencv-python" />
+            <item index="106" class="java.lang.String" itemvalue="scikit-learn" />
+            <item index="107" class="java.lang.String" itemvalue="tzdata" />
+            <item index="108" class="java.lang.String" itemvalue="zope.interface" />
+            <item index="109" class="java.lang.String" itemvalue="numpy" />
+            <item index="110" class="java.lang.String" itemvalue="DateTime" />
+            <item index="111" class="java.lang.String" itemvalue="contourpy" />
+            <item index="112" class="java.lang.String" itemvalue="pandas" />
+            <item index="113" class="java.lang.String" itemvalue="pyasn1-modules" />
+            <item index="114" class="java.lang.String" itemvalue="fonttools" />
+            <item index="115" class="java.lang.String" itemvalue="seaborn" />
+            <item index="116" class="java.lang.String" itemvalue="cmake" />
+            <item index="117" class="java.lang.String" itemvalue="matplotlib" />
+            <item index="118" class="java.lang.String" itemvalue="typing_extensions" />
+            <item index="119" class="java.lang.String" itemvalue="cvzone" />
+            <item index="120" class="java.lang.String" itemvalue="pytz" />
+            <item index="121" class="java.lang.String" itemvalue="jwcrypto" />
           </list>
         </value>
       </option>

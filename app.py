@@ -16,6 +16,7 @@ from google.cloud import vision_v1
 from openpyxl.styles import Font, Alignment
 import requests
 from requests.exceptions import ConnectionError
+from werkzeug.utils import secure_filename
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -227,7 +228,6 @@ def allocated_status():
 
         if user.exists:
             employee_name = user.get("employee_Name")
-            print(employee_name)
             doc_snap = db.collection('Projects').where("AssignedEmployee", "==", employee_name).stream()
             print(doc_snap)
 
@@ -582,30 +582,44 @@ def fillpostdata():
 def submit_form():
     try:
         # Get form data
-        site_id = request.form.get('siteId')
-        sector = request.form.get('sector')
-        azimuth = request.form.get('azimuth')
-        tower_height = request.form.get('towerHeight')
-        mechanical_cell = request.form.get('mechanicalCell')
-        electrical_cell = request.form.get('electricalCell')
-        pole_tilt = request.form.get('poleTilt')
+        site_id = request.json.get('siteId')
+        sector = request.json.get('sector')
+        azimuth = request.json.get('azimuth')
+        azimuthMeasurement = request.json.get('azimuthMeasurement')
+        tower_height = request.json.get('towerHeight')
+        tower_heightMeasurement = request.json.get('towerHeightMeasurement')
+        mechanical_cell = request.json.get('mechanicalCell')
+        electrical_cell = request.json.get('electricalCell')
+        pole_tilt = request.json.get('poleTilt')
+        antenna_height = request.json.get('antennaheight')
+        antenna_heightMeasurement = request.json.get('antennaheightMeasurement')
+        building_height = request.json.get('buildingheight')
+        building_heightMeasurement = request.json.get('buildingheightMeasurement')
+
+        # Check for None values and raise an error if found
+        # if not all([site_id, sector, azimuth, azimuthMeasurement, tower_height, tower_heightMeasurement, mechanical_cell, electrical_cell, pole_tilt, antenna_height, antenna_heightMeasurement, building_height, building_heightMeasurement]):
+        #     raise ValueError("All fields are required and must be provided.")
 
         doc_ref = db.collection('Projects').document(site_id).collection("ParameterData").document(
             "PostData").collection(sector).document("Requirement")
+
         if not doc_ref.get().exists:
             doc_ref.set({})
+
         doc_ref.set({
-            'azimuth': azimuth,
-            'tower_height': tower_height,
+            'azimuth': azimuth + azimuthMeasurement,
+            'tower_height': tower_height + tower_heightMeasurement,
             'mechanical_cell': mechanical_cell,
             'electrical_cell': electrical_cell,
-            'pole_tilt': pole_tilt
+            'pole_tilt': pole_tilt,
+            'antenna_height': antenna_height + antenna_heightMeasurement,
+            'building_height': building_height + building_heightMeasurement
         })
 
-        return redirect(url_for('fillpostdata'))
+        return jsonify({"success": True, "message": f"Data successfully saved for {sector}"})
     except Exception as e:
         print("Error submitting form:", e)
-        return "An error occurred while submitting the form."
+        return jsonify({"success": False, "message": f"Error submitting form: {str(e)}"}), 400
 
 
 
@@ -692,106 +706,123 @@ def fetch_status(site_code):
     except Exception as e:
         print("Error fetching status:", e)
         return "Pending"
+
+
+########### Predata excel sheet generation with respective siteID ########################################
 @app.route('/presectorselectionpage.html')
 def presectorselectionpage():
-    global site_code
-    print(site_code)
+    site_code = request.args.get('site_code')  # Retrieve site_code from query parameters
+    print(site_code)  # Print site_code to the console
     return render_template('presectorselectionpage.html')
 
 
 @app.route('/presector1.html')
 def presector1():
-    return render_template('presector1.html')
+    site_code = request.args.get('site_code')
+    print("presector1 sitecode", site_code)
+    session['site_code'] = site_code  # Store the site_code in the session
+    return render_template('presector1.html', site_code=site_code)
 
 
 @app.route('/presector2.html')
 def presector2():
-    return render_template('presector2.html')
+    site_code = request.args.get('site_code')
+    print("presector2 sitecode", site_code)
+    session['site_code'] = site_code  # Store the site_code in the session
+    return render_template('presector2.html', site_code=site_code)
 
 
 @app.route('/presector3.html')
 def presector3():
-    return render_template('presector3.html')
+    site_code = request.args.get('site_code')
+    print("presector3 sitecode", site_code)
+    session['site_code'] = site_code  # Store the site_code in the session
+    return render_template('presector3.html', site_code=site_code)
 
 
 @app.route('/upload-images-1', methods=['POST'])
 def upload_images_1():
-    global site_code
-    print(site_code)
-    update_existing_sheet('sector1')
-    return redirect(url_for("presector2"))
+    image_keys = ['AzimuthCell', 'Mechanical', 'Electrical', 'AntennaHeight',
+                  'AntBuilding', 'BuildHeight', 'PoleTilt', 'MirrorCompass', 'AntennaMarking']
+    site_code = session.get('site_code')  # Retrieve the site_code from the session
+    print("uploadimage sitecode",site_code)
+    save_images(image_keys, 'Sec1', site_code)
+    return redirect(url_for("presector2", site_code=site_code))
 
 
 @app.route('/upload-images-2', methods=['POST'])
 def upload_images_2():
-    global site_code
-    print(site_code)
-    update_existing_sheet('sector2')
-    return redirect(url_for("presector3"))
+    site_code = request.args.get('site_code')  # Retrieve site_code from query parameters
+    image_keys = ['AzimuthCell', 'Mechanical', 'Electrical', 'AntennaHeight',
+                  'PoleTilt', 'MirrorCompass', 'AntennaMarking']
+    site_code = session.get('site_code')  # Retrieve the site_code from the session
+    print("uploadimage2 sitecode", site_code)
+    save_images(image_keys, 'Sec2', site_code)  # Pass site_code to save_images function
+    return redirect(url_for("presector3", site_code=site_code))
 
 
 @app.route('/upload-images-3', methods=['POST'])
 def upload_images_3():
-    global site_code
-    print(site_code)
-    update_existing_sheet('sector3')
-    return redirect(url_for("post_data"))
+    site_code = request.args.get('site_code')  # Retrieve site_code from query parameters
+    image_keys = ['AzimuthCell', 'Mechanical', 'Electrical', 'AntennaHeight',
+                  'PoleTilt', 'MirrorCompass', 'AntennaMarking']
+    site_code = session.get('site_code')  # Retrieve the site_code from the session
+    print("uploadimage3 sitecode", site_code)
+    save_images(image_keys, 'Sec3', site_code)  # Pass site_code to save_images function
 
+    # Zip the Predata_RAR folder
+    shutil.make_archive(UPLOADS_DIR, 'zip', UPLOADS_DIR)
+    clear_folder('uploads/Predata_RAR')
+    return redirect(url_for("post_data", site_code=site_code))
 
-def update_existing_sheet(sec):
-    global site_code
-    print(site_code)
-    image_keys = [
-        'AzimuthCellSec1', 'MechanicalSec1', 'ElectricalSec1', 'AntennaHeightSec1',
-        'AntBuildingSec1', 'BuildHeightSec1', 'PoleTiltSec1', 'MirrorCompassSec1', 'AntennaMarkingSec1'
-    ] if sec == 'sector1' else [
-        'AzimuthCellSec2', 'MechanicalSec2', 'ElectricalSec2', 'AntennaHeightSec2',
-        'AntBuildingSec2', 'BuildHeightSec2', 'PoleTiltSec2', 'MirrorCompassSec2', 'AntennaMarkingSec2'
-    ] if sec == 'sector2' else [
-        'AzimuthCellSec3', 'MechanicalSec3', 'ElectricalSec3', 'AntennaHeightSec3',
-        'AntBuildingSec3', 'BuildHeightSec3', 'PoleTiltSec3', 'MirrorCompassSec3', 'AntennaMarkingSec3'
-    ]
-
-    save_images(image_keys, sec, site_code)
-
-
-def save_images(image_keys, sec, siteCode):
+def save_images(image_keys, sec, site_code):
     images = {}
     counter = 1
-    cellCount = 1
+    cell_count = 1
+
     uploaded_images = {}
 
     for key in image_keys:
-        print(key)
-        print(sec)
-        file = request.files.get(key)
-        if file is not None:  # Check if an image is uploaded
-            print("If started")
+        file = request.files.get(key + sec)
+        if file:
             images[key] = file
-            uploaded_images[key] = True  # Mark the key as True if image is uploaded
+            uploaded_images[key] = True
         else:
-            print("Else started")
             images[key] = None
             uploaded_images[key] = False
 
-    # Your existing code for Excel manipulation...
+    # Define the folder path for the site_code
+    site_folder = os.path.join(UPLOADS_DIR, site_code)
+    os.makedirs(site_folder, exist_ok=True)
 
-    wb = openpyxl.load_workbook(excel_file_path)
+    # Define the path for the Excel file under the site_code folder
+    excel_file_path = os.path.join(site_folder, "predata.xlsx")
 
-    ws = wb[sec] if sec in wb.sheetnames else wb.create_sheet(title=sec)
+    # Load the existing workbook if it exists
+    try:
+        wb = openpyxl.load_workbook(excel_file_path)
+    except FileNotFoundError:
+        wb = openpyxl.Workbook()
+
+    # Check if the sheet for the sector already exists
+    if sec in wb.sheetnames:
+        ws = wb[sec]
+        ws._images = []  # Clear existing images in the sheet
+    else:
+        ws = wb.create_sheet(title=sec, index=0)
 
     for key, file in images.items():
         if file:
-            # Save the file in the uploads directory
-            file_path = os.path.join(UPLOADS_DIR, f"{sec}_{counter}.jpg")
+            # Save the file in the site folder
+            file_path = os.path.join(site_folder, secure_filename(f"{sec}_{counter}.jpg"))
             file.save(file_path)
 
             # Add image metadata to the Excel sheet
-            cell = ws[f'A{cellCount}']
-            cell.value = str(image_keys[counter - 1])
-            cell.font = Font(size='16', bold=True)
-            cell.alignment = Alignment(horizontal='center', vertical='center')
-            ws.row_dimensions[cellCount].height = 300
+            key_cell = ws.cell(row=cell_count, column=1)
+            key_cell.value = key
+            key_cell.font = Font(size='16', bold=True)
+            key_cell.alignment = Alignment(horizontal='center', vertical='center')
+            ws.row_dimensions[cell_count].height = 300
             ws.column_dimensions['B'].width = 50
             ws.column_dimensions['A'].width = 20
 
@@ -799,10 +830,10 @@ def save_images(image_keys, sec, siteCode):
             img = openpyxl.drawing.image.Image(file_path)
             img.width = 250
             img.height = 400
-            img.anchor = f'B{cellCount}'
+            img.anchor = f'B{cell_count}'
             ws.add_image(img)
 
-        cellCount += 2
+        cell_count += 2
         counter += 1
 
     # Save the modified Excel file
@@ -810,39 +841,44 @@ def save_images(image_keys, sec, siteCode):
 
     # Upload Excel file to Firebase Storage
     bucket = storage.bucket()
-    excel_blob = bucket.blob('pre_data/images.xlsx')
+    excel_blob = bucket.blob(f'pre_data/{site_code}/predata.xlsx')
     excel_blob.upload_from_filename(excel_file_path)
     excel_url = excel_blob.public_url
 
-    # Create a zip file of the images directory
-    shutil.make_archive(UPLOADS_DIR, 'zip', UPLOADS_DIR)
-
-    # Upload the zip file to Firebase Storage
-    zip_blob = bucket.blob('zipF/Predata_RAR.zip')
-    zip_blob.upload_from_filename('uploads/Predata_RAR.zip')
+    # Create a zip file of the site folder
+    zip_file_path = shutil.make_archive(os.path.join(UPLOADS_DIR, site_code), 'zip', site_folder)
+    zip_blob = bucket.blob(f'zipF/{site_code}/predata.zip')
+    zip_blob.upload_from_filename(zip_file_path)
     zip_url = zip_blob.public_url
+
+    # Create a RAR file of the site folder (requires `rarfile` and `unrar` package, adjust as needed)
+    rar_file_path = f"{os.path.join(UPLOADS_DIR, site_code)}.rar"
+    shutil.make_archive(rar_file_path.replace('.rar', ''), 'zip', site_folder)  # Create a zip temporarily
+    shutil.move(f'{rar_file_path.replace(".rar", "")}.zip', rar_file_path)  # Rename the zip to rar
+    rar_blob = bucket.blob(f'zipF/{site_code}/predata.rar')
+    rar_blob.upload_from_filename(rar_file_path)
+    rar_url = rar_blob.public_url
 
     print("Files uploaded successfully to Firebase Storage")
     pre_save_url_to_firestore(excel_url, zip_url)
 
-
-def pre_save_url_to_firestore(excel_url, zip_url):
-    today_date = datetime.today().strftime('%d-%m-%Y')
-
-    # Create a dictionary with document data
-    document_data = {
-        "date": today_date,
-        "Pre_Excel_File_URL": excel_url,
-        "Pre_Zip_File_URL": zip_url,
-    }
-
+    # Firestore update
     db = firestore.client()
-    db.collection("Projects").document(site_code).collection("ParameterData").document("PreData").set(document_data)
+    project_ref = db.collection('Projects').document(site_code)
+    parameter_data_ref = project_ref.collection('ParameterData')
+    pre_data_ref = parameter_data_ref.document('PreData')
+    sec_collection_ref = pre_data_ref.collection(sec)
+    status_doc_ref = sec_collection_ref.document('Status')
 
-    print("File URLs and date saved to Firestore.")
+    status_doc_ref.set(uploaded_images)
+    print("Data updated in Firestore successfully")
+
 
 def pre_save_url_to_firestore(excel_url, zip_url):
     today_date = datetime.today().strftime('%d-%m-%Y')
+
+    site_code = session.get('site_code')  # Retrieve the site_code from the session
+    print("uploadimage3 sitecode", site_code)
 
     # Create a dictionary with document data
     document_data = {
@@ -854,7 +890,6 @@ def pre_save_url_to_firestore(excel_url, zip_url):
     db.collection("Projects").document(site_code).collection("ParameterData").document("PreData").set(document_data)
 
     print("File URLs and date saved to Firestore.")
-
 
 def upload_to_storage():
     bucket = storage.bucket()
@@ -886,16 +921,6 @@ def upload_to_storage():
 
         print("File URLs and document name saved to Firestore.")
 
-    def main():
-        excel_file_path = 'path/to/excel_file.xlsx'
-        document_name = input("Enter the site_id to store the file in: ")
-
-        # Upload files to Firebase Storage
-        excel_url, zip_url = upload_to_storage(excel_file_path)
-
-        # Save URLs to Firestore
-        save_urls_to_firestore(excel_url, zip_url)
-
     def upload_to_storage(excel_file_path):
         bucket = storage.bucket()
 
@@ -919,6 +944,8 @@ def upload_to_storage():
 
     print("Files uploaded successfully to Firestore")
     return excel_url,zip_url
+###################################################################################
+
 @app.route('/postdata.html', methods=['GET', 'POST'])
 def post_data():
     if 'uid' in session:
@@ -948,6 +975,17 @@ def post_data():
             return render_template('postdata.html', site_codes=site_codes_list)
     return "Unauthorized", 401  # If user is not logged in or not authorized
 
+def fetch_requirements(site_code, sector):
+    # Fetch requirements from Firestore
+    requirements_ref = db.collection('Projects').document(site_code) \
+                            .collection('ParameterData').document('PostData') \
+                            .collection(sector).document('Requirement')
+    requirements = requirements_ref.get().to_dict()
+    print(requirements)
+
+    return requirements
+
+
 @app.route('/postsectorselection.html')
 def post_sector_selection():
     site_code = request.args.get('SiteID')
@@ -958,17 +996,37 @@ def post_sector_selection():
 
 @app.route('/postsector1.html')
 def postsector1():
-    return render_template("postsector1.html")
+    site_code = request.args.get('SiteID')
+    sector = 'sector1'  # or dynamically determine sector based on the URL
 
+    # Fetch requirements data
+    requirements = fetch_requirements(site_code, sector)
+
+    # Render the HTML template with the fetched data
+    return render_template("postsector1.html", requirements=requirements)
 
 @app.route('/postsector2.html')
 def postsector2():
-    return render_template("postsector2.html")
+    site_code = request.args.get('SiteID')
+    sector = 'sector2'  # or dynamically determine sector based on the URL
+
+    # Fetch requirements data
+    requirements = fetch_requirements(site_code, sector)
+
+    # Render the HTML template with the fetched data
+    return render_template("postsector2.html", requirements=requirements)
 
 
 @app.route('/postsector3.html')
 def postsector3():
-    return render_template("postsector3.html")
+    site_code = request.args.get('SiteID')
+    sector = 'sector3'  # or dynamically determine sector based on the URL
+
+    # Fetch requirements data
+    requirements = fetch_requirements(site_code, sector)
+
+    # Render the HTML template with the fetched data
+    return render_template("postsector3.html", requirements=requirements)
 
 
 @app.route('/extract_text', methods=['POST'])
@@ -991,348 +1049,610 @@ def extract_text():
         return jsonify({'text': 'No text found in the image.'}), 404
 
 
-
 @app.route('/postupload-images-1', methods=['POST'])
 def postupload_images_1():
-    site_code = session.get('site_code')  # Retrieve SiteID from session
-    print("SiteID:", site_code)  # Print SiteID to console
-    if not site_code:
-        return jsonify({'error': 'SiteID not found in session'}), 400
+    try:
+        site_code = session.get('site_code')  # Retrieve SiteID from session
+        print("SiteID:", site_code)  # Print SiteID to console
+        if not site_code:
+            return jsonify({'errors': ['SiteID not found in session']}), 400
 
-    postimage_keys = ['AzimuthCellSec1', 'MechanicalSec1', 'ElectricalSec1', 'AntennaHeightSec1',
-                      'AntBuildingSec1', 'BuildHeightSec1', 'TowerHeightSec1', 'PoleTiltSec1', 'MirrorCompassSec1', 'AntennaMarkingSec1']
+        postimage_keys = ['AzimuthCellSec1', 'MechanicalSec1', 'ElectricalSec1', 'AntennaHeightSec1',
+                          'AntBuildingSec1', 'BuildHeightSec1', 'TowerHeightSec1', 'PoleTiltSec1', 'MirrorCompassSec1', 'AntennaMarkingSec1']
 
-    # Validate Azimuth image
-    azimuth_file = request.files.get('AzimuthCellSec1')
-    if azimuth_file:
-        print("Enters  in azimuth")
-        client = vision.ImageAnnotatorClient()
-        image_content = azimuth_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
-        print(texts)
+        error_messages = []
 
-        if texts:
-            print("enters in text")
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirement')
-            # print(doc_ref)
-            doc = doc_ref.get()
-            if doc.exists:
-                print("enterindocs")
-                data = doc.to_dict()
-                expected_text = data.get('azimuth', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid Azimuth image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the Azimuth image.'}), 400
+        # Validate Azimuth image
+        azimuth_file = request.files.get('AzimuthCellSec1')
+        if azimuth_file:
+            print("Enters in azimuth")
+            client = vision.ImageAnnotatorClient()
+            image_content = azimuth_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
+            print(texts)
 
-    # Validate AntennaHeight image
-    antenna_height_file = request.files.get('AntennaHeightSec1')
-    if antenna_height_file:
-        print("Enter in antenna height")
-        client = vision.ImageAnnotatorClient()
-        image_content = antenna_height_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
+            if texts:
+                print("enters in text")
+                extracted_text = texts[0].description
+                print("extracted text", extracted_text)
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirement')
+                print(doc_ref)
+                doc = doc_ref.get()
+                if doc.exists:
+                    print("enterindocs")
+                    data = doc.to_dict()
+                    expected_text = data.get('AzimuthCell', '')
+                    print("Expected Text for Azimuth sector 1:", expected_text)
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid Azimuth image')
+            else:
+                error_messages.append('No text found in the Azimuth image.')
 
-        if texts:
-            print("Enters in text")
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirements')
-            doc = doc_ref.get()
-            if doc.exists:
-                print("enter in docs")
-                data = doc.to_dict()
-                expected_text = data.get('antenna_height', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid AntennaHeight image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the AntennaHeight image.'}), 400
+        # Validate AntennaHeight image
+        antenna_height_file = request.files.get('AntennaHeightSec1')
+        if antenna_height_file:
+            print("Enter in antenna height")
+            client = vision.ImageAnnotatorClient()
+            image_content = antenna_height_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
 
-    build_height_file = request.files.get('BuildHeightSec1')
-    if build_height_file:
-        client = vision.ImageAnnotatorClient()
-        image_content = build_height_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
+            if texts:
+                print("Enters in text")
+                extracted_text = texts[0].description
+                print("extracted text of antenna height in sector 1", extracted_text)
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirement')
+                doc = doc_ref.get()
+                print(doc_ref)
+                if doc.exists:
+                    print("enter in docs")
+                    data = doc.to_dict()
+                    expected_text = data.get('AntennaHeight', '')
+                    print("Expected Text for AntennaHeight sector 1:", expected_text)
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid AntennaHeight image')
+            else:
+                error_messages.append('No text found in the AntennaHeight image.')
 
-        if texts:
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirements')
-            doc = doc_ref.get()
-            if doc.exists:
-                data = doc.to_dict()
-                expected_text = data.get('build_height', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid BuildHeight image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the BuildHeight image.'}), 400
+        # Validate BuildHeight image
+        build_height_file = request.files.get('BuildHeightSec1')
+        if build_height_file:
+            client = vision.ImageAnnotatorClient()
+            image_content = build_height_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
 
-    # Validate TowerHeight image
-    tower_height_file = request.files.get('TowerHeightSec1')
-    if tower_height_file:
-        client = vision.ImageAnnotatorClient()
-        image_content = tower_height_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
+            if texts:
+                extracted_text = texts[0].description
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirement')
+                doc = doc_ref.get()
+                if doc.exists:
+                    data = doc.to_dict()
+                    expected_text = data.get('build_height', '')
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid BuildHeight image')
+            else:
+                error_messages.append('No text found in the BuildHeight image.')
 
-        if texts:
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirements')
-            doc = doc_ref.get()
-            if doc.exists:
-                data = doc.to_dict()
-                expected_text = data.get('tower_height', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid TowerHeight image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the TowerHeight image.'}), 400
+        # Validate TowerHeight image
+        tower_height_file = request.files.get('TowerHeightSec1')
+        if tower_height_file:
+            client = vision.ImageAnnotatorClient()
+            image_content = tower_height_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
 
-    # If neither validation fails, proceed with saving other images
-    postsave_images(postimage_keys, 'sector1', site_code)
-    print("saving post image")
-    return redirect(url_for("postsector2"))
+            if texts:
+                extracted_text = texts[0].description
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector1').document('Requirement')
+                doc = doc_ref.get()
+                if doc.exists:
+                    data = doc.to_dict()
+                    expected_text = data.get('TowerHeight', '')
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid TowerHeight image')
+            else:
+                error_messages.append('No text found in the TowerHeight image.')
+
+        # If there are any error messages, return them
+        if error_messages:
+            return jsonify({'errors': error_messages}), 400
+
+        # If no validation fails, proceed with saving other images
+        postsave_images(postimage_keys, 'sector1', site_code)
+        print("saving post image")
+        return jsonify({'message': 'Successfully uploaded images for sector-1'}), 200
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'errors': [str(e)]}), 500
 
 
 @app.route('/postupload-images-2', methods=['POST'])
 def postupload_images_2():
-    site_code = session.get('site_code')  # Retrieve SiteID from session
-    print("SiteID:", site_code)  # Print SiteID to console
-    if not site_code:
-        return jsonify({'error': 'SiteID not found in session'}), 400
+    try:
+        site_code = session.get('site_code')  # Retrieve SiteID from session
+        print("SiteID:", site_code)  # Print SiteID to console
+        if not site_code:
+            return jsonify({'errors': ['SiteID not found in session']}), 400
 
-    postimage_keys = ['AzimuthCellSec2', 'MechanicalSec2', 'ElectricalSec2', 'AntennaHeightSec2',
-                      'AntBuildingSec2', 'BuildHeightSec2', 'TowerHeightSec2', 'PoleTiltSec2', 'MirrorCompassSec2', 'AntennaMarkingSec2']
+        postimage_keys = ['AzimuthCellSec2', 'MechanicalSec2', 'ElectricalSec2', 'AntennaHeightSec2',
+                          'AntBuildingSec2', 'BuildHeightSec2', 'TowerHeightSec2', 'PoleTiltSec2', 'MirrorCompassSec2', 'AntennaMarkingSec2']
 
-    # Validate Azimuth image
-    azimuth_file = request.files.get('AzimuthCellSec2')
-    if azimuth_file:
-        print("Enters  in azimuth")
-        client = vision.ImageAnnotatorClient()
-        image_content = azimuth_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
-        print(texts)
+        error_messages = []
 
-        if texts:
-            print("enters in text")
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirement')
-            print(doc_ref)
-            doc = doc_ref.get()
-            if doc.exists:
-                print("enterindocs")
-                data = doc.to_dict()
-                expected_text = data.get('azimuth', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid Azimuth image'}), 400
+        # Validate Azimuth image
+        azimuth_file = request.files.get('AzimuthCellSec2')
+        if azimuth_file:
+            print("Enters in azimuth")
+            client = vision.ImageAnnotatorClient()
+            image_content = azimuth_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
+            print(texts)
+
+            if texts:
+                print("enters in text")
+                extracted_text = texts[0].description
+                print("extracted text", extracted_text)
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirement')
+                print(doc_ref)
+                doc = doc_ref.get()
+                if doc.exists:
+                    print("enterindocs")
+                    data = doc.to_dict()
+                    expected_text = data.get('AzimuthCell', '')
+                    print("Expected Text for Azimuth sector 2:", expected_text)
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid Azimuth image')
+            else:
+                error_messages.append('No text found in the Azimuth image.')
+        # Validate AntennaHeight image
+        antenna_height_file = request.files.get('AntennaHeightSec2')
+        if antenna_height_file:
+            print("Enter in antenna height")
+            client = vision.ImageAnnotatorClient()
+            image_content = antenna_height_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
+
+            if texts:
+                print("Enters in text")
+                extracted_text = texts[0].description
+                print("extracted text of antenna height in sector 3", extracted_text)
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirement')
+                doc = doc_ref.get()
+                print(doc_ref)
+                if doc.exists:
+                    print("enter in docs")
+                    data = doc.to_dict()
+                    expected_text = data.get('AntennaHeight', '')
+                    print("Expected Text for AntennaHeight sector 2:", expected_text)
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid AntennaHeight image')
+            else:
+                error_messages.append('No text found in the AntennaHeight image.')
+
+        # Validate BuildHeight image
+        build_height_file = request.files.get('BuildHeightSec2')
+        if build_height_file:
+            client = vision.ImageAnnotatorClient()
+            image_content = build_height_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
+
+            if texts:
+                extracted_text = texts[0].description
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirement')
+                doc = doc_ref.get()
+                if doc.exists:
+                    data = doc.to_dict()
+                    expected_text = data.get('build_height', '')
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid BuildHeight image')
+            else:
+                error_messages.append('No text found in the BuildHeight image.')
+
+        # Validate TowerHeight image
+        tower_height_file = request.files.get('TowerHeightSec2')
+        if tower_height_file:
+            client = vision.ImageAnnotatorClient()
+            image_content = tower_height_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
+
+            if texts:
+                extracted_text = texts[0].description
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirement')
+                doc = doc_ref.get()
+                if doc.exists:
+                    data = doc.to_dict()
+                    expected_text = data.get('TowerHeight', '')
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid TowerHeight image')
+            else:
+                error_messages.append('No text found in the TowerHeight image.')
+
+        # If there are any error messages, return them
+        if error_messages:
+            return jsonify({'errors': error_messages}), 400
+
+        # If no validation fails, proceed with saving other images
+        postsave_images(postimage_keys, 'sector2', site_code)
+        print("saving post image")
+        return jsonify({'message': 'Successfully uploaded images for sector-2'}), 200
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'errors': [str(e)]}), 500
+
+
+
+@app.route("/ChangePostRequirements", methods=['PUT'])
+def change_post_requirements():
+    site_code = session.get('site_code')   # Retrieve SiteID from session       
+    return render_template("ChangePostRequirements.html")
+    
+
+# Updated route for fetching all employees
+@app.route("/EmployeeSettings", methods=["GET"])
+def employee_settings():
+    # Retrieve employee data from Firestore
+    employees_ref = db.collection("UserDetails")
+    employees = employees_ref.stream()
+    if request.method == "GET":
+        search_query = request.args.get("query")
+        if search_query:
+            # Perform search based on the query
+            query = employees_ref.where("employee_Name", ">=", search_query).where("employee_Name", "<=", search_query + "\uf8ff")
+            employees = query.stream()
         else:
-            return jsonify({'error': 'No text found in the Azimuth image.'}), 400
+            employees = employees_ref.stream()
+    employee_list = []
+    # Enumerate through employees and assign incremental IDs
+    for index, employee in enumerate(employees, start=1):
+        
+        employee_data = employee.to_dict()
+        employee_list.append({"index": index,"uid": employee.id, "name": employee_data.get("employee_Name"), "email": employee_data.get("email"), "circle_name": employee_data.get("circle_name"), "isAdmin": employee_data.get("isAdmin")})
+    
+    # Pass employee data to the template
+    return render_template('EmployeeSettings.html', employees=employee_list)
 
-    # Validate AntennaHeight image
-    antenna_height_file = request.files.get('AntennaHeightSec2')
-    if antenna_height_file:
-        print("Enter in antenna height")
-        client = vision.ImageAnnotatorClient()
-        image_content = antenna_height_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
+@app.route("/update_employee", methods=["PUT"])
+def update_employee():
+    try:
+        employee_id = request.json.get("id")
+        name = request.json.get("name")
+        email = request.json.get("email")
+        circle_name = request.json.get("circle_name")
+        is_admin = request.json.get("is_admin") == "true"
 
-        if texts:
-            print("Enters in text")
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirements')
-            doc = doc_ref.get()
-            if doc.exists:
-                print("enter in docs")
-                data = doc.to_dict()
-                expected_text = data.get('antenna_height', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid AntennaHeight image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the AntennaHeight image.'}), 400
+        # Update employee data in Firestore
+        employee_ref = db.collection("UserDetails").document(employee_id)
+        employee_ref.update({
+            "employee_Name": name,
+            "email": email,
+            "circle_name": circle_name,
+            "isAdmin": is_admin
+        })
 
-    build_height_file = request.files.get('BuildHeightSec2')
-    if build_height_file:
-        client = vision.ImageAnnotatorClient()
-        image_content = build_height_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
+        return jsonify({"message": "Employee data updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-        if texts:
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirements')
-            doc = doc_ref.get()
-            if doc.exists:
-                data = doc.to_dict()
-                expected_text = data.get('build_height', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid BuildHeight image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the BuildHeight image.'}), 400
+# Define route for deleting employee data
+@app.route("/delete_employee", methods=["POST"])
+def delete_employee():
+    try:
+        # Retrieve employee ID from the request
+        employee_id = request.json.get("id")
 
-    # Validate TowerHeight image
-    tower_height_file = request.files.get('TowerHeightSec2')
-    if tower_height_file:
-        client = vision.ImageAnnotatorClient()
-        image_content = tower_height_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
+        # Delete employee data from Firestore
+        employee_ref = db.collection("UserDetails").document(employee_id)
+        employee_ref.delete()
 
-        if texts:
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector2').document('Requirements')
-            doc = doc_ref.get()
-            if doc.exists:
-                data = doc.to_dict()
-                expected_text = data.get('tower_height', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid TowerHeight image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the TowerHeight image.'}), 400
+        return jsonify({"message": "Employee deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    # If neither validation fails, proceed with saving other images
-    postsave_images(postimage_keys, 'sector2', site_code)
-    print("saving post image")
-    return redirect(url_for("postsector3"))
+@app.route('/ChangePostRequirements')
+def index():
+    return render_template('ChangePostRequirements.html')
+
+
+
+
+def fetch_all_data_from_firebase(site_code, sector):
+    # Initialize an empty dictionary to store the fetched data
+    data = {}
+
+    # Construct the path to the document in Firestore
+    document_path = f"Projects/{site_code}/ParameterData/PostData/{sector}/Requirement"
+
+    # Retrieve the document from Firestore
+    doc_ref = db.document(document_path)
+    doc = doc_ref.get()
+
+    # Check if the document exists
+    if doc.exists:
+        # Extract data from the document
+        doc_data = doc.to_dict()
+        data["azimuth"] = doc_data.get("azimuth", "")
+        data["electrical_cell"] = doc_data.get("electrical_cell", "")
+        data["mechanical_cell"] = doc_data.get("mechanical_cell", "")
+        data["pole_tilt"] = doc_data.get("pole_tilt", "")
+        data["tower_height"] = doc_data.get("tower_height", "")
+        data['antenna_height'] = doc_data.get('antenna_height', "")
+        data['building_height'] = doc_data.get('building_height', "")
+    else:
+        # If document doesn't exist, return an error message
+        return {"error": "No data found for the provided Site ID and Sector"}
+
+    return data
+
+def update_data_in_firebase(site_code, sector, data):
+    # Construct the path to the document in Firestore
+    document_path = f"Projects/{site_code}/ParameterData/PostData/{sector}/Requirement"
+
+    # Retrieve the document reference from Firestore
+    doc_ref = db.document(document_path)
+
+    # Update the document with the new data
+    doc_ref.update(data)
+
+    # Return success message
+    return {"message": "Data updated successfully"}
+
+#updated on 16-05-2024
+@app.route('/fetch_and_update_data', methods=['GET', 'POST'])
+def fetch_and_update_data():
+    if request.method == 'GET':
+        site_id = request.args.get('site_id')
+        sector = request.args.get('sector')
+        # Call function to fetch all data from Firebase
+        data = fetch_all_data_from_firebase(site_id, sector)
+        return jsonify(data)
+    elif request.method == 'POST':
+        site_id = request.form['site_id']
+        sector = request.form['sector']
+        azimuth = request.form['azimuth']
+        electrical_cell = request.form['electrical_cell']
+        mechanical_cell = request.form['mechanical_cell']
+        pole_tilt = request.form['pole_tilt']
+        tower_height = request.form['tower_height']
+        antenna_height = request.form['antenna_height']
+        building_height = request.form['building_height']
+        # Construct data dictionary for update
+        updated_data = {
+            "azimuth": azimuth,
+            "electrical_cell": electrical_cell,
+            "mechanical_cell": mechanical_cell,
+            "pole_tilt": pole_tilt,
+            "tower_height": tower_height,
+            "antenna_height": antenna_height,
+            "building_height": building_height,
+        }
+        # Call function to update data in Firebase
+        update_data_in_firebase(site_id, sector, updated_data)
+        return jsonify({"message": "Data updated successfully"})
+
+
+def delete_record_from_firebase(site_code, sector):
+    # Construct the path to the document in Firestore
+    document_path = f"Projects/{site_code}/ParameterData/PostData/{sector}/Requirement"
+
+    # Retrieve the document reference from Firestore
+    doc_ref = db.document(document_path)
+
+    # Check if the document exists
+    doc = doc_ref.get()
+    if not doc.exists:
+        # If document doesn't exist, return an error message
+        return {"error": "Site ID and selected sector do not exist"}
+
+    # Delete the document
+    doc_ref.delete()
+
+    # Return success message
+    return {"message": "Record deleted successfully"}
+
+@app.route('/delete_record', methods=['POST'])
+def delete_record():
+    site_code = request.json['site_code']  # Adjusted field name to match the client expectation
+    sector = request.json['sector']
+
+    # Call function to delete record from Firebase
+    result = delete_record_from_firebase(site_code, sector)
+    
+    if "error" in result:
+        # If an error occurred, return the error message
+        return jsonify({"error": result["error"]})
+
+    return jsonify({"message": "Record deleted successfully"})
+
+
+
+
 
 
 
 @app.route('/postupload-images-3', methods=['POST'])
 def postupload_images_3():
-    site_code = session.get('site_code')  # Retrieve SiteID from session
-    print("SiteID:", site_code)  # Print SiteID to console
-    if not site_code:
-        return jsonify({'error': 'SiteID not found in session'}), 400
+    try:
+        site_code = session.get('site_code')  # Retrieve SiteID from session
+        print("SiteID:", site_code)  # Print SiteID to console
+        if not site_code:
+            return jsonify({'errors': ['SiteID not found in session']}), 400
 
-    postimage_keys = ['AzimuthCellSec3', 'MechanicalSec3', 'ElectricalSec3', 'AntennaHeightSec3',
-                      'AntBuildingSec3', 'BuildHeightSec3', 'TowerHeightSec3', 'PoleTiltSec3', 'MirrorCompassSec3', 'AntennaMarkingSec3']
+        postimage_keys = ['AzimuthCellSec3', 'MechanicalSec3', 'ElectricalSec3', 'AntennaHeightSec3',
+                          'AntBuildingSec3', 'BuildHeightSec3', 'TowerHeightSec3', 'PoleTiltSec3', 'MirrorCompassSec3', 'AntennaMarkingSec3']
 
-    # Validate Azimuth image
-    azimuth_file = request.files.get('AzimuthCellSec3')
-    if azimuth_file:
-        print("Enters  in azimuth")
-        client = vision.ImageAnnotatorClient()
-        image_content = azimuth_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
-        print(texts)
+        error_messages = []
 
-        if texts:
-            print("enters in text")
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirement')
-            print(doc_ref)
-            doc = doc_ref.get()
-            if doc.exists:
-                print("enterindocs")
-                data = doc.to_dict()
-                expected_text = data.get('azimuth', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid Azimuth image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the Azimuth image.'}), 400
+        # Validate Azimuth image
+        azimuth_file = request.files.get('AzimuthCellSec3')
+        if azimuth_file:
+            print("Enters in azimuth")
+            client = vision.ImageAnnotatorClient()
+            image_content = azimuth_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
+            print(texts)
 
-    # Validate AntennaHeight image
-    antenna_height_file = request.files.get('AntennaHeightSec3')
-    if antenna_height_file:
-        print("Enter in antenna height")
-        client = vision.ImageAnnotatorClient()
-        image_content = antenna_height_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
+            if texts:
+                print("enters in text")
+                extracted_text = texts[0].description
+                print("extracted text", extracted_text)
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirement')
+                print(doc_ref)
+                doc = doc_ref.get()
+                if doc.exists:
+                    print("enterindocs")
+                    data = doc.to_dict()
+                    expected_text = data.get('AzimuthCell', '')
+                    print("Expected Text for Azimuth sector 3:", expected_text)
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid Azimuth image')
+            else:
+                error_messages.append('No text found in the Azimuth image.')
+        # Validate AntennaHeight image
+        antenna_height_file = request.files.get('AntennaHeightSec3')
+        if antenna_height_file:
+            print("Enter in antenna height")
+            client = vision.ImageAnnotatorClient()
+            image_content = antenna_height_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
 
-        if texts:
-            print("Enters in text")
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirements')
-            doc = doc_ref.get()
-            if doc.exists:
-                print("enter in docs")
-                data = doc.to_dict()
-                expected_text = data.get('antenna_height', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid AntennaHeight image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the AntennaHeight image.'}), 400
+            if texts:
+                print("Enters in text")
+                extracted_text = texts[0].description
+                print("extracted text of antenna height in sector 3", extracted_text)
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirement')
+                doc = doc_ref.get()
+                print(doc_ref)
+                if doc.exists:
+                    print("enter in docs")
+                    data = doc.to_dict()
+                    expected_text = data.get('AntennaHeight', '')
+                    print("Expected Text for AntennaHeight sector 3:", expected_text)
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid AntennaHeight image')
+            else:
+                error_messages.append('No text found in the AntennaHeight image.')
 
-    build_height_file = request.files.get('BuildHeightSec3')
-    if build_height_file:
-        client = vision.ImageAnnotatorClient()
-        image_content = build_height_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
+        # Validate BuildHeight image
+        build_height_file = request.files.get('BuildHeightSec3')
+        if build_height_file:
+            client = vision.ImageAnnotatorClient()
+            image_content = build_height_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
 
-        if texts:
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirements')
-            doc = doc_ref.get()
-            if doc.exists:
-                data = doc.to_dict()
-                expected_text = data.get('build_height', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid BuildHeight image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the BuildHeight image.'}), 400
+            if texts:
+                extracted_text = texts[0].description
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirement')
+                doc = doc_ref.get()
+                if doc.exists:
+                    data = doc.to_dict()
+                    expected_text = data.get('build_height', '')
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid BuildHeight image')
+            else:
+                error_messages.append('No text found in the BuildHeight image.')
 
-    # Validate TowerHeight image
-    tower_height_file = request.files.get('TowerHeightSec3')
-    if tower_height_file:
-        client = vision.ImageAnnotatorClient()
-        image_content = tower_height_file.read()
-        image = vision.Image(content=image_content)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
+        # Validate TowerHeight image
+        tower_height_file = request.files.get('TowerHeightSec3')
+        if tower_height_file:
+            client = vision.ImageAnnotatorClient()
+            image_content = tower_height_file.read()
+            image = vision_v1.types.Image(content=image_content)
+            response = client.text_detection(image=image)
+            texts = response.text_annotations
 
-        if texts:
-            extracted_text = texts[0].description
-            doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirements')
-            doc = doc_ref.get()
-            if doc.exists:
-                data = doc.to_dict()
-                expected_text = data.get('tower_height', '')
-                if expected_text not in extracted_text:
-                    return jsonify({'error': 'Invalid TowerHeight image'}), 400
-        else:
-            return jsonify({'error': 'No text found in the TowerHeight image.'}), 400
+            if texts:
+                extracted_text = texts[0].description
+                doc_ref = db.collection('Projects').document(site_code).collection('ParameterData').document('PostData').collection('sector3').document('Requirement')
+                doc = doc_ref.get()
+                if doc.exists:
+                    data = doc.to_dict()
+                    expected_text = data.get('TowerHeight', '')
+                    if expected_text not in extracted_text:
+                        error_messages.append('Invalid TowerHeight image')
+            else:
+                error_messages.append('No text found in the TowerHeight image.')
 
-    # If neither validation fails, proceed with saving other images
-    postsave_images(postimage_keys, 'sector3', site_code)
-    print("saving post image")
-    return redirect(url_for("post_data"))
+        # If there are any error messages, return them
+        if error_messages:
+            return jsonify({'errors': error_messages}), 400
 
+        # If no validation fails, proceed with saving other images
+        postsave_images(postimage_keys, 'sector3', site_code)
+        print("saving post image")
+        clear_folder('postuploads/Postdata_RAR')
+        return jsonify({'message': 'Successfully uploaded images for sector-3'}), 200
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        clear_folder('postuploads/Postdata_RAR')
+        return jsonify({'errors': [str(e)]}), 500
 
 def postsave_images(postimage_keys, postsec, siteCode):
     postimages = {}
     postcounter = 1
     postcellCount = 1
-    site_code = session.get('site_code')  # Retrieve SiteID from session
-    print("SiteID:", site_code)  # Print SiteID to console
+
+    # Retrieve SiteID from session
+    site_code = session.get('site_code')
+    print("SiteID:", site_code)
     if not site_code:
         return jsonify({'error': 'SiteID not found in session'}), 400
 
+    # Define the folder path for the site_code
+    site_folder = os.path.join(POSTUPLOADS_DIR, site_code)
+    os.makedirs(site_folder, exist_ok=True)
+
+    # Define the path for the Excel file under the site_code folder
+    post_excel_file_path = os.path.join(site_folder, "postdata.xlsx")
+
+    # Load the existing workbook if it exists
+    try:
+        wb = openpyxl.load_workbook(post_excel_file_path)
+    except FileNotFoundError:
+        wb = openpyxl.Workbook()
+
+    # Check if the sheet for the sector already exists
+    if postsec in wb.sheetnames:
+        # Get the existing sheet
+        ws = wb[postsec]
+        ws._images = []  # Clear existing images in the sheet
+    else:
+        # Create a new worksheet in the Excel file
+        ws = wb.create_sheet(title=postsec, index=0)
+
+    # Process each image and update the status
     for key in postimage_keys:
         if key in request.files:
             file = request.files[key]
             img = PILImage.open(file)
             img = img.convert('RGB')  # Convert image to RGB mode
-            post_file_path = os.path.join(POSTUPLOADS_DIR, f"{postsec}_{key}.jpg")
+            post_file_path = os.path.join(site_folder, f"{postsec}_{key}.jpg")
             img.save(post_file_path)
             postimages[key] = True  # Mark the key as True if image is uploaded
         else:
-            postimages[key] = False
+            postimages[key] = False  # Mark the key as False if no image is uploaded
 
     # Update Firestore with upload status
     db = firestore.client()
@@ -1344,24 +1664,13 @@ def postsave_images(postimage_keys, postsec, siteCode):
     status_doc_ref.set(postimages)
 
     print("Data updated in Firestore successfully")
-    wb = openpyxl.load_workbook(post_excel_file_path)
-
-    for postkey in postimage_keys:
-        file = request.files.get(postkey)
-        if file:
-            postimages[postkey] = file
-        else:
-            postimages[postkey] = None
-
-    # Create a new worksheet in the Excel file
-    ws = wb.create_sheet(title=postsec, index=0)
 
     for key, file in postimages.items():
         if file:
-            post_file_path = os.path.join(POSTUPLOADS_DIR, f"{postsec}_{postcounter}.jpg")
+            post_file_path = os.path.join(site_folder, f"{postsec}_{postcounter}.jpg")
 
             try:
-                img = PILImage.open(file)
+                img = PILImage.open(request.files[key])
             except PILImage.UnidentifiedImageError:
                 print(f"Unsupported image format for {key}: {file.filename}")
                 continue
@@ -1369,13 +1678,14 @@ def postsave_images(postimage_keys, postsec, siteCode):
             img.save(post_file_path)
 
             cell = ws[f'A{postcellCount}']
-            cell.value = str(postimage_keys[postcounter - 1])
+            cell.value = key
             cell.font = Font(size='16', bold=True)
             cell.alignment = Alignment(horizontal='center', vertical='center')
             ws.row_dimensions[postcellCount].height = 300
             ws.column_dimensions['B'].width = 50
             ws.column_dimensions['A'].width = 20
 
+            # Add the new image to the cell
             img = openpyxl.drawing.image.Image(post_file_path)
             img.width = 250
             img.height = 400
@@ -1387,119 +1697,31 @@ def postsave_images(postimage_keys, postsec, siteCode):
 
     wb.save(post_excel_file_path)
 
+    # Upload Excel file to Firebase Storage
     bucket = storage.bucket()
-    excel_blob = bucket.blob('post_data/postimages.xlsx')
+    excel_blob = bucket.blob(f'post_data/{site_code}/postdata.xlsx')
     excel_blob.upload_from_filename(post_excel_file_path)
     excel_url = excel_blob.public_url
 
-    shutil.make_archive(POSTUPLOADS_DIR, 'zip', POSTUPLOADS_DIR)
-
-    zip_blob = bucket.blob('zipF/Postdata_RAR.zip')
-    zip_blob.upload_from_filename('postuploads/Postdata_RAR.zip')
+    # Create a zip file of the site folder
+    zip_file_path = shutil.make_archive(site_folder, 'zip', f'postuploads/Postdata_RAR/{site_code}')
+    zip_blob = bucket.blob(f'zipF/{site_code}/postdata.zip')
+    zip_blob.upload_from_filename(zip_file_path)
     zip_url = zip_blob.public_url
 
     print("Files uploaded successfully to Firebase Storage")
     post_save_url_to_firestore(excel_url, zip_url)
+    # shutil.rmtree(f'postuploads/Postdata_RAR/{site_code}')
 
-# def postsave_images(postimage_keys, postsec, siteCode):
-#     postimages = {}
-#     site_code = session.get('site_code')  # Retrieve SiteID from session
-#     print("SiteID:", site_code)  # Print SiteID to console
-#     if not site_code:
-#         return jsonify({'error': 'SiteID not found in session'}), 400
-#
-#     # Update Firestore with upload status
-#     db = firestore.client()
-#     project_ref = db.collection('Projects').document(siteCode)
-#     parameter_data_ref = project_ref.collection('ParameterData')
-#     post_data_ref = parameter_data_ref.document('PostData')
-#     sec_collection_ref = post_data_ref.collection(postsec)
-#     status_doc_ref = sec_collection_ref.document('Status')
-#     status_doc_ref.set(postimages)
-#
-#     print("Data updated in Firestore successfully")
-#
-#     # Check if the workbook exists, if not, create a new one
-#     if not os.path.exists(post_excel_file_path):
-#         wb = openpyxl.Workbook()
-#     else:
-#         wb = openpyxl.load_workbook(post_excel_file_path)
-#
-#     # Check if sheet for the sector exists, if not, create a new sheet
-#     if postsec not in wb.sheetnames:
-#         ws = wb.create_sheet(title=postsec, index=0)
-#     else:
-#         ws = wb[postsec]
-#
-#     for postkey in postimage_keys:
-#         file = request.files.get(postkey)
-#         if file:
-#             postimages[postkey] = file
-#             post_file_path = os.path.join(POSTUPLOADS_DIR, f"{postsec}_{postkey}.jpg")
-#
-#             try:
-#                 img = PILImage.open(file)
-#             except PILImage.UnidentifiedImageError:
-#                 print(f"Unsupported image format for {postkey}: {file.filename}")
-#                 continue
-#
-#             img.save(post_file_path)
-#
-#             # Find existing image if exists and update it
-#             key_found = False
-#             for r in range(1, ws.max_row + 1):
-#                 for c in range(1, ws.max_column + 1):
-#                     cell = ws.cell(row=r, column=c)
-#                     if isinstance(cell.value, str) and cell.value == str(postkey):
-#                         key_found = True
-#                         # Delete existing image
-#                         for img_obj in ws._images:
-#                             if img_obj.anchor == cell.coordinate:
-#                                 ws._images.remove(img_obj)
-#                                 break
-#                         # Add new image
-#                         img = openpyxl.drawing.image.Image(post_file_path)
-#                         img.width = 250
-#                         img.height = 400
-#                         img.anchor = cell.coordinate
-#                         ws.add_image(img)
-#                         break
-#
-#             # If key not found, create a new entry
-#             if not key_found:
-#                 postcellCount = ws.max_row + 1
-#                 cell = ws.cell(row=postcellCount, column=1)
-#                 cell.value = str(postkey)
-#                 cell.font = Font(size='16', bold=True)
-#                 cell.alignment = Alignment(horizontal='center', vertical='center')
-#                 ws.row_dimensions[postcellCount].height = 300
-#                 ws.column_dimensions['B'].width = 50
-#                 ws.column_dimensions['A'].width = 20
-#
-#                 img = openpyxl.drawing.image.Image(post_file_path)
-#                 img.width = 250
-#                 img.height = 400
-#                 img.anchor = cell.coordinate
-#                 ws.add_image(img)
-#
-#     wb.save(post_excel_file_path)
-#
-#     bucket = storage.bucket()
-#     excel_blob = bucket.blob('post_data/postimages.xlsx')
-#     excel_blob.upload_from_filename(post_excel_file_path)
-#     excel_url = excel_blob.public_url
-#
-#     shutil.make_archive(POSTUPLOADS_DIR, 'zip', POSTUPLOADS_DIR)
-#
-#     zip_blob = bucket.blob('zipF/Postdata_RAR.zip')
-#     zip_blob.upload_from_filename('postuploads/Postdata_RAR.zip')
-#     zip_url = zip_blob.public_url
-#
-#     print("Files uploaded successfully to Firebase Storage")
-#     post_save_url_to_firestore(excel_url, zip_url)
-#
-#
+    print("Data updated in Firestore successfully")
 
+def clear_folder(folder_path):
+    for item in os.listdir(folder_path):
+        item_path=os.path.join(folder_path,item)
+        if os.path.isfile(item_path):
+            os.remove(item_path)
+        elif os.path.isdir(item_path):
+            shutil.rmtree(item_path)
 
 def post_save_url_to_firestore(excel_url, zip_url):
     site_code = session.get('site_code')  # Retrieve SiteID from session

@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Page Title</title>
+    <title>Admin</title>
     <style>
-         html, body {
+        html, body {
             height: 100%;
             margin: 0;
             padding: 0;
@@ -233,12 +233,15 @@
 
     <div class="all">
         <div class="nav-links">
+            <a href="./EmployeeSettings">Employee settings</a>
             <div class="dropdown" onclick="toggleActivityDropdown()">
                 <a href="#" class="dropbtn">Activity</a>
                 <!-- Adding sub-options under "Activity" -->
                 <div class="dropdown-content" id="activityDropdownContent">
                     <a href="/projectallocation">Task Allocation</a>
                     <a href="/admintaskStatus">Task Status</a>
+                    <a href="/fillpostdata">Upload Post Data</a>
+                    <a href="/ChangePostRequirements">Change Post Requirements</a>
                 </div>
             </div>
             <div class="dropdown" onclick="toggleProfileDropdown()">

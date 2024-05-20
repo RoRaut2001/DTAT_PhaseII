@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Post Data Form</title>
     <style>
-       html, body {
+    html, body {
             height: 100%;
             margin: 0;
             padding: 0;
@@ -242,6 +243,7 @@
 
      <div class="all">
         <div class="nav-links">
+            <a href="./welcomeadmin">Home</a>
             <div class="dropdown" onclick="toggleActivityDropdown()">
                 <a href="#" class="dropbtn">Activity</a>
                 <!-- Adding sub-options under "Activity" -->
@@ -274,77 +276,118 @@
                 <option value="sector3">sector3</option>
             </select>
             <label for="azimuth">Azimuth Cell:</label>
-            <input type="text" id="azimuth" name="azimuth" required disabled>
+            <input type="text" id="azimuth" name="azimuth" disabled>
+            <select id="azimuthMeasurement" name="azimuthMeasurement" disabled>
+                <option value="">Degree Direction</option>
+                <option value="°E">°E</option>
+                <option value="°W">°W</option>
+                <option value="°N">°N</option>
+                <option value="°S">°S</option>
+                <option value="°NE">°NE</option>
+                <option value="°NW">°NW</option>
+                <option value="°SE">°SE</option>
+                <option value="°SW">°SW</option>
+            </select>
             <label for="towerHeight">Tower Height:</label>
-            <input type="text" id="towerHeight" name="towerHeight" required disabled>
-            <label for="mechanicalCell">Mechanical Cell:</label>
-            <input type="text" id="mechanicalCell" name="mechanicalCell" required disabled>
-            <label for="electricalCell">Electrical Cell:</label>
-            <input type="text" id="electricalCell" name="electricalCell" required disabled>
-            <label for="poleTilt">Pole Tilt:</label>
-            <input type="text" id="poleTilt" name="poleTilt" required disabled>
+            <input type="text" id="towerHeight" name="towerHeight" disabled>
+            <select id="towerHeightMeasurement" name="towerHeightMeasurement" disabled>
+                <option value="">select unit</option>
+                <option value="m">m</option>
+                <option value="cm">cm</option>
+            </select>
+            <label for="buildingheight">Building Height:</label>
+            <input type="text" id="buildingheight" name="buildingheight" disabled>
+            <select id="buildingheightMeasurement" name="buildingheightMeasurement" disabled>
+                <option value="">select unit</option>
+                <option value="m">m</option>
+                <option value="cm">cm</option>
+            </select>
             <label for="antennaheight">Antenna Height:</label>
-            <input type="text" id="antennaheight" name="antennaheight" required disabled>
+            <input type="text" id="antennaheight" name="antennaheight" disabled>
+            <select id="antennaheightMeasurement" name="antennaheightMeasurement" disabled>
+                <option value="">select unit</option>
+                <option value="m">m</option>
+                <option value="cm">cm</option>
+            </select>
+            <label for="mechanicalCell">Mechanical Cell:</label>
+            <input type="text" id="mechanicalCell" name="mechanicalCell"disabled>
+            <label for="electricalCell">Electrical Cell:</label>
+            <input type="text" id="electricalCell" name="electricalCell"disabled>
+            <label for="poleTilt">Pole Tilt:</label>
+            <input type="text" id="poleTilt" name="poleTilt"disabled>
             <button type="submit" id="submit">Submit</button>
         </form>
-    </div>
+        <div id="message"></div>
+    </div> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
     <script>
-        document.getElementById("siteId").addEventListener("input", function() {
-            var siteId = document.getElementById("siteId").value;
-            var sector = document.getElementById("sector").value;
-
-            var fields = ["azimuth", "towerHeight", "mechanicalCell", "electricalCell", "poleTilt","antennaheight"];
-            var enableFields = siteId && sector;
-
-            fields.forEach(function(field) {
-                document.getElementById(field).disabled = !enableFields;
-            });
-        });
-
-        document.getElementById("sector").addEventListener("input", function() {
-            var siteId = document.getElementById("siteId").value;
-            var sector = document.getElementById("sector").value;
-
-            var fields = ["azimuth", "towerHeight", "mechanicalCell", "electricalCell", "poleTilt","antennaheight"];
-            var enableFields = siteId && sector;
-
-            fields.forEach(function(field) {
-                document.getElementById(field).disabled = !enableFields;
-            });
-        });
-        function toggleActivityDropdown() {
-            var activityDropdownContent = document.getElementById("activityDropdownContent");
-            var profileDropdownContent = document.getElementById("profileDropdownContent");
-            if (activityDropdownContent.style.display === "block") {
-                activityDropdownContent.style.display = "none";
-            } else {
-                activityDropdownContent.style.display = "block";
-                // Close profile dropdown if it's open
-                profileDropdownContent.style.display = "none";
-            }
-        }
-        function toggleProfileDropdown() {
-            var profileDropdownContent = document.getElementById("profileDropdownContent");
-            var activityDropdownContent = document.getElementById("activityDropdownContent");
-            if (profileDropdownContent.style.display === "block") {
-                profileDropdownContent.style.display = "none";
-            } else {
-                profileDropdownContent.style.display = "block";
-                // Close activity dropdown if it's open
-                activityDropdownContent.style.display = "none";
-            }
-        }
-        function redirectToPage() {
-            // Replace 'validationpage.html' with the URL of the desired page
-            window.location.href = 'TaskStatus.html';
-        }
-
-        // Function to show the additional form when the first form is submitted
-        document.getElementById("siteForm").addEventListener("submit", function(event) {
-            event.preventDefault(); // Prevent the default form submission
-            var additionalForm = document.getElementById("additionalForm");
-            additionalForm.style.display = "block"; // Display the additional form
-        });
-    </script>
+      document.getElementById("siteIDForm").addEventListener("submit", function(event) {
+          event.preventDefault(); // Prevent the default form submission
+  
+          var formData = new FormData(document.getElementById("siteIDForm"));
+          var jsonData = {};
+          formData.forEach((value, key) => {
+              jsonData[key] = value;
+          });
+  
+          fetch('/fillpostdata', {
+              method: 'POST',
+              body: JSON.stringify(jsonData),
+              headers: {
+                  'Content-Type': 'application/json'
+              }
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  swal({
+                      title: "Success",
+                      text: data.message,
+                      icon: "success"
+                  });
+              } else {
+                  swal({
+                      title: "Error",
+                      text: data.message,
+                      icon: "error"
+                  });
+              }
+              // Optionally, reset the form after submission
+              document.getElementById("siteIDForm").reset();
+              toggleFormFields(); // Reset form fields to disabled
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              swal({
+                  title: "Error",
+                  text: 'An error occurred while submitting the form',
+                  icon: "error"
+              });
+          });
+      });
+  
+      function toggleFormFields() {
+          var siteId = document.getElementById("siteId").value;
+          var sector = document.getElementById("sector").value;
+          var fields = [
+              "azimuth", "towerHeight", "buildingheight", "antennaheight",
+              "mechanicalCell", "electricalCell", "poleTilt",
+              "azimuthMeasurement", "towerHeightMeasurement", "buildingheightMeasurement", "antennaheightMeasurement"
+          ];
+  
+          var enableFields = siteId && sector; // Check if both site ID and sector are entered
+  
+          fields.forEach(function(field) {
+              document.getElementById(field).disabled = !enableFields;
+          });
+      }
+  
+      document.getElementById("siteId").addEventListener("input", toggleFormFields);
+      document.getElementById("sector").addEventListener("change", toggleFormFields);
+  
+      // Initial call to toggle form fields based on initial site ID and sector values
+      toggleFormFields();
+  </script>
+  
 </body>
 </html>
